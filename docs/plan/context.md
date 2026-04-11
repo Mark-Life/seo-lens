@@ -56,6 +56,7 @@ The SEO rules engine lives in `packages/` so it can be:
 - Used by the extension's content script
 - Potentially used server-side (web app, API, CI tool) in the future
 
-## What This Document Is NOT
+## Related Documents
 
-This is not a detailed spec or implementation plan. It describes **what we want to achieve**, not how. Specific rules, scoring weights, UI designs, and implementation details will come later.
+- [User Stories](./user-stories.md) — what the extension solves from the user's perspective
+
