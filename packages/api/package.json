@@ -1,0 +1,19 @@
+{
+  "name": "@workspace/api",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./router": "./src/router.ts",
+    "./client": "./src/client.ts"
+  },
+  "dependencies": {
+    "@orpc/client": "^1.13.5",
+    "@orpc/server": "^1.13.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

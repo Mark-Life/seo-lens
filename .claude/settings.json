@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun x ultracite fix"
+          },
+          {
+            "type": "command",
+            "command": "bun x ultracite check"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "netxjs-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "bunx --bun ultracite fix",
+    "check": "bunx --bun ultracite check",
+    "fix": "bunx --bun ultracite fix",
+    "prepare": "husky",
+    "upgrade": "bun run scripts/upgrade.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.0",
+    "@types/bun": "^1.3.9",
+    "@workspace/typescript-config": "workspace:*",
+    "bun-types": "^1.3.9",
+    "husky": "^9.1.7",
+    "turbo": "^2.8.1",
+    "typescript": "5.9.3",
+    "ultracite": "7.2.3"
+  },
+  "packageManager": "bun@1.3.9",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
