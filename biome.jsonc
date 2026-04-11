@@ -11,7 +11,9 @@
       "!dist/**/*",
       "!packages/ui/src/components/**/*",
       "!packages/ui/src/hooks/**/*",
-      "!packages/ui/src/lib/**/*"
+      "!packages/ui/src/lib/**/*",
+      "!apps/extension/.wxt/**/*",
+      "!apps/extension/.output/**/*"
     ]
   },
   "overrides": [
@@ -28,6 +30,12 @@
             "noMagicNumbers": "off"
           }
         }
+      }
+    },
+    {
+      "includes": ["apps/extension/**/*.ts", "apps/extension/**/*.tsx"],
+      "javascript": {
+        "globals": ["browser", "defineBackground", "defineContentScript"]
       }
     }
   ],
