@@ -15,7 +15,9 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "fetch-schema": "curl -sSLf -o scripts/vendor/schemaorg-current-https.jsonld https://schema.org/version/latest/schemaorg-current-https.jsonld",
+    "update-schema": "bun scripts/generate-schema.ts"
   },
   "exports": {
     ".": "./src/index.ts",
