@@ -5,10 +5,34 @@ import { ScoreGauge } from "./score-gauge";
 import { SectionLabel } from "./section-label";
 
 const SEVERITY_ITEMS = [
-  { key: "error", label: "Errors", swatch: "bg-destructive" },
-  { key: "warning", label: "Warnings", swatch: "bg-secondary" },
-  { key: "info", label: "Info", swatch: "bg-primary/60" },
-  { key: "pass", label: "Passed", swatch: "bg-foreground/30" },
+  {
+    key: "error",
+    label: "Errors",
+    swatch: "bg-destructive",
+    glyph: "✕",
+    meaning: "Blocks indexing or ranking",
+  },
+  {
+    key: "warning",
+    label: "Warnings",
+    swatch: "bg-secondary",
+    glyph: "!",
+    meaning: "Suboptimal — should fix",
+  },
+  {
+    key: "info",
+    label: "Info",
+    swatch: "bg-primary/60",
+    glyph: "i",
+    meaning: "Suggestion or hint",
+  },
+  {
+    key: "pass",
+    label: "Passed",
+    swatch: "bg-foreground/30",
+    glyph: "✓",
+    meaning: "Check is healthy",
+  },
 ] as const;
 
 function buildSummaryText() {
@@ -38,27 +62,37 @@ export function OverviewTab() {
 
       <div className="rule-hair" />
 
-      {/* SEVERITY GRID */}
+      {/* SEVERITY TALLY + LEGEND */}
       <section>
-        <SectionLabel index="02" title="Tally" />
-        <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border">
-          {SEVERITY_ITEMS.map((item) => (
-            <div
-              className="flex items-center justify-between gap-2 bg-card px-3 py-3"
+        <SectionLabel hint="severity" index="02" title="Tally" />
+        <ul className="mt-4 overflow-hidden rounded-md border border-border bg-card">
+          {SEVERITY_ITEMS.map((item, idx) => (
+            <li
+              className={`flex items-center gap-3 px-3 py-2.5 ${
+                idx > 0 ? "border-border/60 border-t" : ""
+              }`}
               key={item.key}
             >
-              <div className="flex items-center gap-2">
-                <span className={`size-1.5 rounded-full ${item.swatch}`} />
-                <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span
+                aria-hidden
+                className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full ${item.swatch} font-mono font-semibold text-[10px] text-background leading-none`}
+              >
+                {item.glyph}
+              </span>
+              <div className="flex flex-1 flex-col">
+                <span className="font-mono text-[10px] text-foreground uppercase tracking-wider">
                   {item.label}
                 </span>
+                <span className="text-[10px] text-muted-foreground/80 italic">
+                  {item.meaning}
+                </span>
               </div>
-              <span className="font-display font-light text-[22px] tabular-nums leading-none">
+              <span className="font-display font-light text-[24px] tabular-nums leading-none">
                 {audit.counts[item.key]}
               </span>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
       <div className="rule-hair" />

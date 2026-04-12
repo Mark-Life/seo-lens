@@ -162,9 +162,116 @@ export const social = {
   ogDescription: "Hand-blown borosilicate. Solid brass. Made in Lisbon.",
   ogImage: "/og/aurora-lamp.png",
   ogType: "product",
-  twitterCard: "summary_large_image",
+  ogSiteName: "Acme Studio",
   domain: "acme.studio",
 };
+
+export const twitter = {
+  card: "summary_large_image" as const,
+  site: "@acmestudio",
+  creator: "@maria_lisboa",
+  title: "Aurora Lamp — A desk lamp you'll keep forever",
+  description: "Hand-blown borosilicate. Solid brass. Made in Lisbon.",
+  image: "/og/aurora-lamp.png",
+};
+
+export const breadcrumbs = [
+  { name: "Home", url: "https://acme.studio/" },
+  { name: "Products", url: "https://acme.studio/products" },
+  {
+    name: "Aurora Lamp",
+    url: "https://acme.studio/products/aurora-lamp",
+  },
+];
+
+export type IndexingStatus = "ok" | "warn" | "bad";
+
+export const indexing: {
+  key: string;
+  label: string;
+  value: string;
+  status: IndexingStatus;
+  source: string;
+}[] = [
+  {
+    key: "indexable",
+    label: "Indexable",
+    value: "Yes",
+    status: "ok",
+    source: "meta robots",
+  },
+  {
+    key: "follow",
+    label: "Follow links",
+    value: "Yes",
+    status: "ok",
+    source: "meta robots",
+  },
+  {
+    key: "canonical",
+    label: "Canonical",
+    value: "self",
+    status: "ok",
+    source: "<link rel=canonical>",
+  },
+  {
+    key: "x-robots",
+    label: "X-Robots-Tag",
+    value: "absent",
+    status: "ok",
+    source: "response header",
+  },
+  {
+    key: "robots-txt",
+    label: "robots.txt",
+    value: "allow",
+    status: "ok",
+    source: "/robots.txt",
+  },
+  {
+    key: "sitemap",
+    label: "Sitemap",
+    value: "referenced",
+    status: "ok",
+    source: "/sitemap.xml",
+  },
+];
+
+export interface JsonLdBlock {
+  fields: { key: string; value: string }[];
+  id: string;
+  note?: string;
+  type: string;
+  valid: boolean;
+}
+
+export const jsonldBlocks: JsonLdBlock[] = [
+  {
+    id: "ld1",
+    type: "Product",
+    valid: true,
+    fields: [
+      { key: "name", value: "Aurora Lamp" },
+      { key: "offers.price", value: "320.00 EUR" },
+    ],
+  },
+  {
+    id: "ld2",
+    type: "Organziation",
+    valid: false,
+    note: "Did you mean Organization?",
+    fields: [
+      { key: "@type", value: "Organziation" },
+      { key: "name", value: "Acme Studio" },
+    ],
+  },
+  {
+    id: "ld3",
+    type: "BreadcrumbList",
+    valid: true,
+    fields: [{ key: "itemListElement", value: "3 items" }],
+  },
+];
 
 export const headings = [
   { level: 1, text: "Welcome to Acme Studio" },

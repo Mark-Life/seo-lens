@@ -93,22 +93,9 @@ This is not just error-checking — it's a "what does Google see?" dashboard, ev
 
 ---
 
-## US-6: Compare Pages and Track Changes
-
-**As a** developer working on SEO improvements,
-**I want** to see how the SEO audit results change as I edit my page,
-**so that** I can verify my fixes are working without manually re-running audits.
-
-### Requirements
-
-- Re-audit on page reload or on demand
-- Visual indication of new/resolved issues compared to the previous audit
-- Optionally persist last audit per URL for before/after comparison
-
----
-
-## US-7: Export Full Audit Report
+## US-6: Export Full Audit Report
 
 **As a** developer or SEO consultant,
 **I want** to export the complete audit as a Markdown or JSON file,
 **so that** I can share it with teammates, attach it to tickets, or feed it into other tools.
+

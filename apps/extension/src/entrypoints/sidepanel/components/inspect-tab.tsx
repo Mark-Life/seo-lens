@@ -1,7 +1,24 @@
-import { Image as ImageIcon } from "lucide-react";
-import { headings, images, jsonld, meta, social } from "../data/placeholder";
+import { ChevronRight, Image as ImageIcon } from "lucide-react";
+import {
+  breadcrumbs,
+  headings,
+  type IndexingStatus,
+  images,
+  indexing,
+  jsonld,
+  jsonldBlocks,
+  meta,
+  social,
+  twitter,
+} from "../data/placeholder";
 import { CopyButton } from "./copy-button";
 import { SectionLabel } from "./section-label";
+
+const indexingTone: Record<IndexingStatus, string> = {
+  ok: "bg-primary",
+  warn: "bg-secondary",
+  bad: "bg-destructive",
+};
 
 function MetaRow({ k, v }: { k: string; v: string }) {
   return (
@@ -41,41 +58,153 @@ export function InspectTab() {
 
       <div className="rule-hair" />
 
-      {/* SOCIAL PREVIEW */}
+      {/* INDEXING DASHBOARD */}
       <section>
-        <SectionLabel hint="Open Graph" index="02" title="Social preview" />
+        <SectionLabel
+          hint="what bots see"
+          index="02"
+          title="Indexing & robots"
+        />
+        <ul className="mt-3 overflow-hidden rounded-md border border-border bg-card">
+          {indexing.map((row, idx) => (
+            <li
+              className={`flex items-center gap-3 px-3 py-2 ${
+                idx > 0 ? "border-border/60 border-t" : ""
+              }`}
+              key={row.key}
+            >
+              <span
+                aria-hidden
+                className={`size-1.5 shrink-0 rounded-full ${indexingTone[row.status]}`}
+              />
+              <div className="flex flex-1 flex-col">
+                <span className="font-display text-[12px] text-foreground leading-tight">
+                  {row.label}
+                </span>
+                <span className="font-mono text-[9px] text-muted-foreground/80 uppercase tracking-wider">
+                  {row.source}
+                </span>
+              </div>
+              <span className="font-mono text-[10px] text-foreground tabular-nums">
+                {row.value}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        <div className="mt-4 overflow-hidden rounded-md border border-border bg-card">
-          <div className="relative aspect-[1200/630] w-full bg-gradient-to-br from-primary/15 via-muted to-secondary/15">
-            <div className="grain absolute inset-0" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <ImageIcon className="size-7 text-muted-foreground/50" />
-            </div>
-            <span className="absolute right-2 bottom-2 rounded-sm bg-background/85 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
-              1024 × 512
+      <div className="rule-hair" />
+
+      {/* SOCIAL PREVIEW — OG + TWITTER */}
+      <section>
+        <SectionLabel hint="OG · Twitter" index="03" title="Social previews" />
+
+        {/* OG preview */}
+        <div className="mt-4">
+          <div className="mb-1.5 flex items-baseline justify-between">
+            <span className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest">
+              Open Graph
+            </span>
+            <span className="font-mono text-[9px] text-muted-foreground/70">
+              og:type · {social.ogType}
             </span>
           </div>
-          <div className="border-border border-t px-3 py-2.5">
-            <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
-              {social.domain}
+          <div className="overflow-hidden rounded-md border border-border bg-card">
+            <div className="relative aspect-[1200/630] w-full bg-gradient-to-br from-primary/15 via-muted to-secondary/15">
+              <div className="grain absolute inset-0" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ImageIcon className="size-7 text-muted-foreground/50" />
+              </div>
+              <span className="absolute right-2 bottom-2 rounded-sm bg-background/85 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
+                1024 × 512
+              </span>
             </div>
-            <div className="mt-0.5 line-clamp-1 font-display font-medium text-[13px]">
-              {social.ogTitle}
-            </div>
-            <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
-              {social.ogDescription}
+            <div className="border-border border-t px-3 py-2.5">
+              <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
+                {social.domain}
+              </div>
+              <div className="mt-0.5 line-clamp-1 font-display font-medium text-[13px]">
+                {social.ogTitle}
+              </div>
+              <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
+                {social.ogDescription}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <span className="rounded-sm border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-            og:type · {social.ogType}
-          </span>
-          <span className="rounded-sm border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-            twitter:card · {social.twitterCard}
-          </span>
+        {/* Twitter card preview */}
+        <div className="mt-5">
+          <div className="mb-1.5 flex items-baseline justify-between">
+            <span className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest">
+              Twitter card
+            </span>
+            <span className="font-mono text-[9px] text-muted-foreground/70">
+              {twitter.card}
+            </span>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="relative aspect-[2/1] w-full bg-gradient-to-br from-secondary/15 via-muted to-primary/15">
+              <div className="grain absolute inset-0" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ImageIcon className="size-7 text-muted-foreground/50" />
+              </div>
+            </div>
+            <div className="px-3 py-2">
+              <div className="line-clamp-1 font-display text-[12px] text-foreground">
+                {twitter.title}
+              </div>
+              <div className="line-clamp-1 text-[10px] text-muted-foreground">
+                {twitter.description}
+              </div>
+              <div className="mt-0.5 font-mono text-[9px] text-muted-foreground/70 uppercase tracking-wider">
+                {social.domain}
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <span className="rounded-sm border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              site · {twitter.site}
+            </span>
+            <span className="rounded-sm border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              creator · {twitter.creator}
+            </span>
+          </div>
         </div>
+      </section>
+
+      <div className="rule-hair" />
+
+      {/* BREADCRUMBS */}
+      <section>
+        <SectionLabel hint="from JSON-LD" index="04" title="Breadcrumb trail" />
+        <nav
+          aria-label="Breadcrumb preview"
+          className="mt-3 flex flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2.5"
+        >
+          {breadcrumbs.map((crumb, idx) => {
+            const last = idx === breadcrumbs.length - 1;
+            return (
+              <div className="flex items-center gap-1.5" key={crumb.url}>
+                <span
+                  className={`font-display text-[12px] ${
+                    last
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {crumb.name}
+                </span>
+                {!last && (
+                  <ChevronRight
+                    aria-hidden
+                    className="size-3 text-muted-foreground/60"
+                  />
+                )}
+              </div>
+            );
+          })}
+        </nav>
       </section>
 
       <div className="rule-hair" />
@@ -84,7 +213,7 @@ export function InspectTab() {
       <section>
         <SectionLabel
           hint={`${headings.length} nodes`}
-          index="03"
+          index="05"
           title="Heading hierarchy"
         />
         <ul className="mt-4 flex flex-col gap-1">
@@ -107,15 +236,82 @@ export function InspectTab() {
 
       <div className="rule-hair" />
 
-      {/* JSON-LD */}
+      {/* JSON-LD — VALIDATED BLOCKS + RAW */}
       <section>
         <div className="flex items-center justify-between">
-          <SectionLabel index="04" title="Structured data" />
+          <SectionLabel
+            hint={`${jsonldBlocks.length} blocks`}
+            index="06"
+            title="Structured data"
+          />
           <CopyButton label="Copy JSON-LD" payload={jsonld} size="sm" />
         </div>
-        <pre className="mt-3 max-h-72 overflow-auto rounded-md border border-border bg-foreground/5 p-3 font-mono text-[10.5px] text-foreground leading-relaxed">
-          <code>{jsonld}</code>
-        </pre>
+
+        {/* Validated block list */}
+        <ul className="mt-3 flex flex-col gap-2">
+          {jsonldBlocks.map((block) => (
+            <li
+              className={`overflow-hidden rounded-md border bg-card ${
+                block.valid
+                  ? "border-border"
+                  : "border-destructive/50 ring-1 ring-destructive/20"
+              }`}
+              key={block.id}
+            >
+              <div className="flex items-center gap-2 border-border/60 border-b px-3 py-2">
+                <span
+                  className={`font-mono text-[9px] uppercase tracking-wider ${
+                    block.valid ? "text-primary" : "text-destructive"
+                  }`}
+                >
+                  {block.valid ? "schema.org ✓" : "schema.org ✕"}
+                </span>
+                <span
+                  className={`font-display text-[12px] ${
+                    block.valid ? "text-foreground" : "text-destructive"
+                  }`}
+                >
+                  {block.type}
+                </span>
+                {block.note && (
+                  <span className="ml-auto font-mono text-[9px] text-destructive/90 italic">
+                    {block.note}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col px-3 py-2">
+                {block.fields.map((f, idx) => (
+                  <div
+                    className="kv-row text-[11px]"
+                    key={`${block.id}-${idx}`}
+                  >
+                    <span className="font-mono text-muted-foreground">
+                      {f.key}
+                    </span>
+                    <span className="kv-leader" />
+                    <span className="max-w-[180px] truncate font-mono text-foreground">
+                      {f.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {/* Raw source */}
+        <details className="group mt-3">
+          <summary className="flex cursor-pointer items-center gap-1.5 font-mono text-[9px] text-muted-foreground uppercase tracking-widest hover:text-foreground">
+            <ChevronRight
+              aria-hidden
+              className="size-3 transition-transform group-open:rotate-90"
+            />
+            View raw source
+          </summary>
+          <pre className="mt-2 max-h-72 overflow-auto rounded-md border border-border bg-foreground/5 p-3 font-mono text-[10.5px] text-foreground leading-relaxed">
+            <code>{jsonld}</code>
+          </pre>
+        </details>
       </section>
 
       <div className="rule-hair" />
@@ -124,7 +320,7 @@ export function InspectTab() {
       <section>
         <SectionLabel
           hint={`${images.length} found`}
-          index="05"
+          index="07"
           title="Images & alt text"
         />
         <ul className="mt-4 grid grid-cols-2 gap-3">

@@ -10,10 +10,27 @@ const ARC_FRACTION = 0.78;
 const ARC_LEN = CIRC * ARC_FRACTION;
 const ROTATION = 90 + (1 - ARC_FRACTION) * 180;
 
+function tierFor(score: number): { letter: string; label: string } {
+  if (score >= 90) {
+    return { letter: "A", label: "Excellent" };
+  }
+  if (score >= 80) {
+    return { letter: "B", label: "Solid" };
+  }
+  if (score >= 70) {
+    return { letter: "C", label: "Needs work" };
+  }
+  if (score >= 60) {
+    return { letter: "D", label: "Underperforming" };
+  }
+  return { letter: "F", label: "Critical" };
+}
+
 export function ScoreGauge({ score }: ScoreGaugeProps) {
   const clamped = Math.max(0, Math.min(100, score));
   const progress = (clamped / 100) * ARC_LEN;
   const offset = ARC_LEN - progress;
+  const tier = tierFor(clamped);
 
   return (
     <div
@@ -64,11 +81,21 @@ export function ScoreGauge({ score }: ScoreGaugeProps) {
       </svg>
 
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pt-4">
-        <div className="font-display font-light text-[64px] text-foreground tabular-nums leading-none tracking-tight">
-          {clamped}
+        <div className="flex items-start gap-1">
+          <div className="font-display font-light text-[64px] text-foreground tabular-nums leading-none tracking-tight">
+            {clamped}
+          </div>
+          <div className="mt-1.5 font-mono text-[11px] text-muted-foreground tabular-nums">
+            /100
+          </div>
         </div>
-        <div className="mt-1 font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
-          SEO Score
+        <div className="mt-1 flex items-center gap-1.5">
+          <span className="inline-flex size-4 items-center justify-center rounded-sm border border-foreground/30 font-display font-medium text-[10px] text-foreground leading-none">
+            {tier.letter}
+          </span>
+          <span className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest">
+            {tier.label}
+          </span>
         </div>
       </div>
     </div>
