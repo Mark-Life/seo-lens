@@ -33,4 +33,9 @@ export const faqPageSpec: RichResultSpec = {
   recommended: FAQPageRecommended,
   docUrl:
     "https://developers.google.com/search/docs/appearance/structured-data/faqpage",
+  restricted: {
+    reason:
+      "Google shows FAQ rich results only for well-known, authoritative government or health-focused sites. Markup remains valid for other surfaces.",
+    since: "2023",
+  },
 };

@@ -20,10 +20,9 @@ export const OrganizationRecommended = Schema.Struct({
   address: Schema.Unknown,
   email: Schema.String,
   telephone: Schema.String,
-  foundingDate: Schema.String,
-  founder: Schema.Unknown,
-  numberOfEmployees: Schema.Unknown,
-  slogan: Schema.String,
+  legalName: Schema.String,
+  alternateName: Schema.Unknown,
+  brand: Schema.Unknown,
 });
 
 export const organizationSpec: RichResultSpec = {

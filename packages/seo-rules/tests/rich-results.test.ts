@@ -16,13 +16,13 @@ const baseArticle = {
   },
   mainEntityOfPage: "https://example.com/hello",
   articleSection: "Tech",
-  articleBody: "Body text.",
-  wordCount: 42,
-  keywords: ["hello", "world"],
   inLanguage: "en",
-  isAccessibleForFree: true,
-  about: "Greetings",
   description: "An example article",
+  thumbnailUrl: "https://example.com/thumb.jpg",
+  speakable: {
+    "@type": "SpeakableSpecification",
+    cssSelector: [".headline"],
+  },
 };
 
 describe("validateBlock — Article spec", () => {

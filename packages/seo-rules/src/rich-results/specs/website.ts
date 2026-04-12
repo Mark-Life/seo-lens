@@ -17,10 +17,8 @@ export const WebSiteRecommended = Schema.Struct({
   alternateName: Schema.Unknown,
   inLanguage: Schema.Unknown,
   publisher: Schema.Unknown,
-  potentialAction: Schema.Unknown,
   sameAs: Schema.Unknown,
-  copyrightHolder: Schema.Unknown,
-  datePublished: Schema.String,
+  potentialAction: Schema.Unknown,
 });
 
 export const websiteSpec: RichResultSpec = {

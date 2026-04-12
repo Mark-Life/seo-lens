@@ -353,6 +353,30 @@ const RichResultsBar = ({
   );
 };
 
+interface SpecNoticeProps {
+  readonly kind: "deprecated" | "restricted";
+  readonly reason: string;
+  readonly since: string;
+}
+
+const NOTICE_LABEL: Record<SpecNoticeProps["kind"], string> = {
+  deprecated: "rich result removed",
+  restricted: "rich result restricted",
+};
+
+const SpecNotice = ({ kind, reason, since }: SpecNoticeProps) => (
+  <div className="border-muted-foreground/20 border-b bg-muted/40 px-3 py-1.5 font-mono text-[10px] text-muted-foreground">
+    <span className="font-semibold uppercase tracking-wider">
+      {NOTICE_LABEL[kind]}
+    </span>
+    <span aria-hidden className="opacity-40">
+      {" "}
+      · since {since} —{" "}
+    </span>
+    <span className="opacity-90">{reason}</span>
+  </div>
+);
+
 const SUGGESTION_TONE: Record<FieldSuggestion["severity"], string> = {
   required: "text-destructive/80",
   recommended: "text-amber-600 dark:text-amber-400",
@@ -487,6 +511,20 @@ const BlockCard = ({ block }: { readonly block: JsonLdBlock }) => {
           onToggleSuggestions={() => setShowSuggestions((v) => !v)}
           report={block.richResults}
           showSuggestions={showSuggestions}
+        />
+      )}
+      {block.richResults?.deprecated && (
+        <SpecNotice
+          kind="deprecated"
+          reason={block.richResults.deprecated.reason}
+          since={block.richResults.deprecated.since}
+        />
+      )}
+      {block.richResults?.restricted && (
+        <SpecNotice
+          kind="restricted"
+          reason={block.richResults.restricted.reason}
+          since={block.richResults.restricted.since}
         />
       )}
       <div className="px-3 py-2">

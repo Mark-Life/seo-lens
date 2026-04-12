@@ -29,4 +29,9 @@ export const howToSpec: RichResultSpec = {
   recommended: HowToRecommended,
   docUrl:
     "https://developers.google.com/search/docs/appearance/structured-data/how-to",
+  deprecated: {
+    reason:
+      "Google removed HowTo rich results from Search in September 2023. Markup remains valid for Bing, AI crawlers, and voice assistants.",
+    since: "2023-09-14",
+  },
 };

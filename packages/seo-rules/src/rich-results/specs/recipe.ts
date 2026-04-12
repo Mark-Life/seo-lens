@@ -31,6 +31,11 @@ export const RecipeRecommended = Schema.Struct({
   recipeYield: Schema.Unknown,
   nutrition: Schema.Unknown,
   aggregateRating: Schema.Unknown,
+  video: Schema.Unknown,
+  recipeCategory: Schema.String,
+  recipeCuisine: Schema.String,
+  keywords: Schema.Unknown,
+  suitableForDiet: Schema.Unknown,
 });
 
 export const recipeSpec: RichResultSpec = {

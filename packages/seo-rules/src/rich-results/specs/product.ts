@@ -33,10 +33,6 @@ export const ProductRecommended = Schema.Struct({
   gtin: Schema.String,
   mpn: Schema.String,
   category: Schema.String,
-  color: Schema.String,
-  material: Schema.String,
-  model: Schema.String,
-  weight: Schema.Unknown,
 });
 
 export const productSpec: RichResultSpec = {

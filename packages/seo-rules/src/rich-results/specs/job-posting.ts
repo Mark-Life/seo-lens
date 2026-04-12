@@ -28,6 +28,11 @@ export const JobPostingRecommended = Schema.Struct({
   employmentType: Schema.Unknown,
   validThrough: Schema.String,
   identifier: Schema.Unknown,
+  jobLocationType: Schema.Unknown,
+  applicantLocationRequirements: Schema.Unknown,
+  directApply: Schema.Unknown,
+  educationRequirements: Schema.Unknown,
+  experienceRequirements: Schema.Unknown,
 });
 
 export const jobPostingSpec: RichResultSpec = {

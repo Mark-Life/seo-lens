@@ -26,6 +26,10 @@ export const LocalBusinessRecommended = Schema.Struct({
   priceRange: Schema.String,
   openingHoursSpecification: Schema.Unknown,
   geo: Schema.Unknown,
+  aggregateRating: Schema.Unknown,
+  review: Schema.Unknown,
+  sameAs: Schema.Unknown,
+  areaServed: Schema.Unknown,
 });
 
 export const localBusinessSpec: RichResultSpec = {

@@ -25,8 +25,11 @@ export const VideoObjectRecommended = Schema.Struct({
   contentUrl: Schema.String,
   embedUrl: Schema.String,
   duration: Schema.String,
-  expires: Schema.String,
   interactionStatistic: Schema.Unknown,
+  hasPart: Schema.Unknown,
+  publication: Schema.Unknown,
+  regionsAllowed: Schema.Unknown,
+  expires: Schema.String,
 });
 
 export const videoObjectSpec: RichResultSpec = {

@@ -1,6 +1,10 @@
 import { Either, ParseResult, Schema } from "effect";
 import { schemaVocab } from "../generated/schema-vocab";
-import { specsByType } from "./registry";
+import {
+  type SpecDeprecated,
+  type SpecRestricted,
+  specsByType,
+} from "./registry";
 
 export interface FieldError {
   readonly message: string;
@@ -17,9 +21,11 @@ export interface FieldSuggestion {
 }
 
 export interface RichResultsReport {
+  readonly deprecated?: SpecDeprecated;
   readonly docUrl: string;
   readonly recommendedErrors: readonly FieldError[];
   readonly requiredErrors: readonly FieldError[];
+  readonly restricted?: SpecRestricted;
   readonly spec: string;
   readonly suggestions: readonly FieldSuggestion[];
 }
@@ -152,5 +158,7 @@ export const validateBlock = (
     requiredErrors: decodeIssues(spec.required, raw),
     recommendedErrors: decodeIssues(spec.recommended, raw),
     suggestions: collectSuggestions(spec, raw),
+    ...(spec.deprecated ? { deprecated: spec.deprecated } : {}),
+    ...(spec.restricted ? { restricted: spec.restricted } : {}),
   };
 };

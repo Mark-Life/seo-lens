@@ -18,14 +18,10 @@ export const PersonRecommended = Schema.Struct({
   description: Schema.String,
   worksFor: Schema.Unknown,
   sameAs: Schema.Unknown,
-  knowsAbout: Schema.Unknown,
-  knowsLanguage: Schema.Unknown,
   email: Schema.String,
   givenName: Schema.String,
   familyName: Schema.String,
-  alumniOf: Schema.Unknown,
   birthDate: Schema.String,
-  nationality: Schema.Unknown,
 });
 
 export const personSpec: RichResultSpec = {

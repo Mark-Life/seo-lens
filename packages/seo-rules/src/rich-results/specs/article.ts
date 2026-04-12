@@ -35,22 +35,19 @@ export const ArticleRequired = Schema.Struct({
 });
 
 /**
- * Article recommended fields — mix of Google's Rich Results recommendations
- * (`dateModified`, `publisher`) and broader discoverability fields. Missing
- * ones surface as `warning` findings and as ghost rows in the tree.
+ * Article recommended fields — Google Rich Results recommendations
+ * (`dateModified`, `publisher`, `thumbnailUrl`, `speakable`) plus core
+ * discoverability signals. Missing ones surface as `warning` findings.
  */
 export const ArticleRecommended = Schema.Struct({
   dateModified: Schema.String,
   publisher: Schema.Unknown,
   mainEntityOfPage: Schema.Unknown,
   articleSection: Schema.Unknown,
-  articleBody: Schema.String,
-  wordCount: Schema.Unknown,
-  keywords: Schema.Unknown,
   inLanguage: Schema.Unknown,
-  isAccessibleForFree: Schema.Unknown,
-  about: Schema.Unknown,
   description: Schema.String,
+  thumbnailUrl: Schema.Unknown,
+  speakable: Schema.Unknown,
 });
 
 export const articleSpec: RichResultSpec = {
