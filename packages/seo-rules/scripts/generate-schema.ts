@@ -8,7 +8,10 @@
  * - propertyDomains: property -> schema: classes from `schema:domainIncludes`
  * - propertyRanges: property -> schema: classes from `schema:rangeIncludes`
  *
- * Usage: `bun run update-schema` from `packages/seo-rules`.
+ * Usage:
+ *   `bun run update-schema` — regenerates `schema-vocab.ts` from the vendor file.
+ *   `bun run update-schema -- --check` — regenerates into memory and diffs against
+ *     the committed file; exits non-zero on mismatch. Used in CI to catch drift.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -77,6 +80,8 @@ const refsToLocalNames = (refs: readonly IdRef[]): readonly string[] => {
 };
 
 const main = () => {
+  const checkMode = process.argv.includes("--check");
+
   const raw = readFileSync(VENDOR_PATH, "utf8");
   const doc = JSON.parse(raw) as Doc;
   const graph = doc["@graph"];
@@ -126,6 +131,20 @@ const main = () => {
     propertyDomains,
     propertyRanges,
   });
+
+  if (checkMode) {
+    const existing = readFileSync(OUT_PATH, "utf8");
+    if (existing !== out) {
+      console.error(
+        `schema-vocab.ts is stale relative to ${VENDOR_PATH}.\n` +
+          "Run `bun run update-schema` in packages/seo-rules and commit the result."
+      );
+      process.exit(1);
+    }
+    console.log(`schema-vocab.ts up to date (${classes.size} classes).`);
+    return;
+  }
+
   writeFileSync(OUT_PATH, out);
 
   console.log(

@@ -521,7 +521,9 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 **Actions:** for each type, read the Google Rich Results docs page, author `required` + `recommended` schemas, register, add a fixture test. One type per commit.
 **Done when:** all v1 types from §4 registered + tested.
 
-### Step 12 — CI freshness check
+### ✅ Step 12 — CI freshness check
+
+> **Status note (2026-04-12):** `--check` mode and `update-schema:check` script are implemented and verified (passes clean, exits non-zero on drift). CI wiring (action #2) and the monthly upstream-fetch workflow (action #3) are **deferred** — this repo has no `.github/workflows/` directory yet. When CI is added, run `bun run update-schema:check` (in `packages/seo-rules`) before tests.
 
 **Goal:** prevent drift between committed vendor file and upstream schema.org.
 **Files:**
