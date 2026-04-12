@@ -4,6 +4,7 @@ import type {
   JsonLdNode,
   JsonLdObjectNode,
   JsonLdPrimitiveNode,
+  RichResultsReport,
 } from "@workspace/seo-rules";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
@@ -254,6 +255,75 @@ function TreeNode({ node }: NodeProps) {
   return <ObjectRow node={node} />;
 }
 
+type RichResultsTone = "ok" | "error" | "warn";
+
+interface RichResultsSummary {
+  readonly glyph: string;
+  readonly message: string;
+  readonly tone: RichResultsTone;
+}
+
+const formatPaths = (errors: RichResultsReport["requiredErrors"]): string =>
+  errors.map((e) => e.path || "/").join(", ");
+
+const summarize = (report: RichResultsReport): RichResultsSummary => {
+  if (report.requiredErrors.length > 0) {
+    return {
+      tone: "error",
+      glyph: "✕",
+      message: `missing: ${formatPaths(report.requiredErrors)}`,
+    };
+  }
+  if (report.recommendedErrors.length > 0) {
+    return {
+      tone: "warn",
+      glyph: "⚠",
+      message: `recommended missing: ${formatPaths(report.recommendedErrors)}`,
+    };
+  }
+  return {
+    tone: "ok",
+    glyph: "✓",
+    message: "all required fields present",
+  };
+};
+
+const TONE_CLASSES: Record<RichResultsTone, string> = {
+  ok: "border-primary/20 bg-primary/5 text-primary",
+  error: "border-destructive/30 bg-destructive/[0.06] text-destructive",
+  warn: "border-amber-500/30 bg-amber-500/[0.06] text-amber-600 dark:text-amber-400",
+};
+
+const RichResultsBar = ({ report }: { readonly report: RichResultsReport }) => {
+  const summary = summarize(report);
+  return (
+    <div
+      className={`flex items-center gap-2 border-b px-3 py-1.5 font-mono text-[10px] ${TONE_CLASSES[summary.tone]}`}
+    >
+      <span aria-hidden className="shrink-0 text-[11px] leading-none">
+        {summary.glyph}
+      </span>
+      <span className="shrink-0 font-semibold uppercase tracking-wider">
+        {report.spec}
+      </span>
+      <span aria-hidden className="shrink-0 opacity-40">
+        —
+      </span>
+      <span className="min-w-0 flex-1 truncate" title={summary.message}>
+        {summary.message}
+      </span>
+      <a
+        className="shrink-0 underline decoration-dotted underline-offset-2 opacity-70 transition-opacity hover:opacity-100"
+        href={report.docUrl}
+        rel="noreferrer"
+        target="_blank"
+      >
+        docs
+      </a>
+    </div>
+  );
+};
+
 interface RootBodyProps {
   readonly root: JsonLdNode;
 }
@@ -326,6 +396,7 @@ export function JsonLdTree({ blocks }: JsonLdTreeProps) {
               </span>
             )}
           </div>
+          {block.richResults && <RichResultsBar report={block.richResults} />}
           <div className="px-3 py-2">
             <RootBody root={block.root} />
           </div>

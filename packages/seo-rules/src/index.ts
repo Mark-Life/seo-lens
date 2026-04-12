@@ -4,6 +4,8 @@ import { imagesAltRule } from "./rules/images-alt";
 import { canonicalRule, robotsRule } from "./rules/indexing";
 import { metaDescriptionRule } from "./rules/meta-description";
 import {
+  structuredRichResultsRecommendedRule,
+  structuredRichResultsRequiredRule,
   structuredUnknownTypeRule,
   structuredValidRule,
 } from "./rules/structured";
@@ -20,6 +22,8 @@ export const defaultRules: readonly AuditRule[] = [
   robotsRule,
   structuredValidRule,
   structuredUnknownTypeRule,
+  structuredRichResultsRequiredRule,
+  structuredRichResultsRecommendedRule,
 ];
 
 export { runAudit } from "./engine";
@@ -38,6 +42,8 @@ export { imagesAltRule } from "./rules/images-alt";
 export { canonicalRule, robotsRule } from "./rules/indexing";
 export { metaDescriptionRule } from "./rules/meta-description";
 export {
+  structuredRichResultsRecommendedRule,
+  structuredRichResultsRequiredRule,
   structuredUnknownTypeRule,
   structuredValidRule,
 } from "./rules/structured";

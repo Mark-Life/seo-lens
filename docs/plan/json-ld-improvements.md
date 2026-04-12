@@ -478,7 +478,7 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 
 **Done when:** tests pass; `deriveJsonLdBlocks` returns non-null `richResults` for Article blocks.
 
-### Step 9 — Rich Results UI summary bar
+### ✅ Step 9 — Rich Results UI summary bar
 
 **Goal:** user-visible pass/fail state per block.
 **Files:**
@@ -495,7 +495,7 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 
 **Done when:** bar renders for Article blocks with correct state.
 
-### Step 10 — Rich Results rules (findings integration)
+### ✅ Step 10 — Rich Results rules (findings integration)
 
 **Goal:** surface rich-results issues in the Findings tab, not just Inspect.
 **Files:**

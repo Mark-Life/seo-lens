@@ -1,3 +1,4 @@
+import { validateBlock } from "../rich-results/validate";
 import { AuditFinding, FindingContext, type PageData, RuleId } from "../schema";
 import type { AuditRule } from "../types";
 import { isClass, suggestClass } from "../vocab/query";
@@ -163,5 +164,145 @@ export const structuredUnknownTypeRule: AuditRule = {
         grep: unknown[0]?.type,
       }),
     ];
+  },
+};
+
+const readTopLevelType = (value: unknown): string | null => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const t = (value as Record<string, unknown>)["@type"];
+  if (typeof t === "string") {
+    return t;
+  }
+  if (Array.isArray(t)) {
+    for (const inner of t) {
+      if (typeof inner === "string") {
+        return inner;
+      }
+    }
+  }
+  return null;
+};
+
+const requiredRuleId = RuleId.make("structured.rich-results-required");
+
+export const structuredRichResultsRequiredRule: AuditRule = {
+  id: requiredRuleId,
+  name: "Rich Results Required Fields",
+  description:
+    "Validates required fields for Google Rich Results eligible types",
+  category: "structured",
+  weight: 4,
+  run(page: PageData) {
+    const findings: AuditFinding[] = [];
+    let matched = 0;
+    page.jsonLd.forEach((raw, i) => {
+      const type = readTopLevelType(raw);
+      if (type === null) {
+        return;
+      }
+      const report = validateBlock(raw, type);
+      if (report === null) {
+        return;
+      }
+      matched++;
+      if (report.requiredErrors.length === 0) {
+        return;
+      }
+      const context = report.requiredErrors.map((e) =>
+        FindingContext.make({ label: "missing", value: e.path })
+      );
+      findings.push(
+        AuditFinding.make({
+          id: `${requiredRuleId}#block${i + 1}`,
+          ruleId: requiredRuleId,
+          category: "structured",
+          severity: "error",
+          title: `${report.spec} missing required fields`,
+          message: `block #${i + 1}: ${report.requiredErrors.length} required field${report.requiredErrors.length === 1 ? "" : "s"} missing for Google ${report.spec} Rich Results.`,
+          context,
+          grep: report.requiredErrors[0]?.path,
+        })
+      );
+    });
+
+    if (matched === 0) {
+      return [];
+    }
+    if (findings.length === 0) {
+      return [
+        AuditFinding.make({
+          id: `${requiredRuleId}#pass`,
+          ruleId: requiredRuleId,
+          category: "structured",
+          severity: "pass",
+          title: "Rich Results required fields present",
+          message: `${matched} block${matched === 1 ? "" : "s"} with all required fields for Google Rich Results.`,
+        }),
+      ];
+    }
+    return findings;
+  },
+};
+
+const recommendedRuleId = RuleId.make("structured.rich-results-recommended");
+
+export const structuredRichResultsRecommendedRule: AuditRule = {
+  id: recommendedRuleId,
+  name: "Rich Results Recommended Fields",
+  description:
+    "Flags missing recommended fields for Google Rich Results eligible types",
+  category: "structured",
+  weight: 2,
+  run(page: PageData) {
+    const findings: AuditFinding[] = [];
+    let matched = 0;
+    page.jsonLd.forEach((raw, i) => {
+      const type = readTopLevelType(raw);
+      if (type === null) {
+        return;
+      }
+      const report = validateBlock(raw, type);
+      if (report === null) {
+        return;
+      }
+      matched++;
+      if (report.recommendedErrors.length === 0) {
+        return;
+      }
+      const context = report.recommendedErrors.map((e) =>
+        FindingContext.make({ label: "missing", value: e.path })
+      );
+      findings.push(
+        AuditFinding.make({
+          id: `${recommendedRuleId}#block${i + 1}`,
+          ruleId: recommendedRuleId,
+          category: "structured",
+          severity: "warning",
+          title: `${report.spec} missing recommended fields`,
+          message: `block #${i + 1}: ${report.recommendedErrors.length} recommended field${report.recommendedErrors.length === 1 ? "" : "s"} missing for Google ${report.spec} Rich Results.`,
+          context,
+          grep: report.recommendedErrors[0]?.path,
+        })
+      );
+    });
+
+    if (matched === 0) {
+      return [];
+    }
+    if (findings.length === 0) {
+      return [
+        AuditFinding.make({
+          id: `${recommendedRuleId}#pass`,
+          ruleId: recommendedRuleId,
+          category: "structured",
+          severity: "pass",
+          title: "Rich Results recommended fields present",
+          message: `${matched} block${matched === 1 ? "" : "s"} with all recommended fields for Google Rich Results.`,
+        }),
+      ];
+    }
+    return findings;
   },
 };
