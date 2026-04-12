@@ -1,5 +1,4 @@
 @docs/plan/context.md
-@docs/plan/user-stories.md
 
 ## Local Effect Source
 
@@ -9,3 +8,7 @@ The Effect repository is cloned to `~/.local/share/effect-solutions/effect` for 
 
 - effect schema to interface types when makes sense.
 - interface over type
+
+## Rules
+
+- for test run "bun run test" not "bun test" – they are different

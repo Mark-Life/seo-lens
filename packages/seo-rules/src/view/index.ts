@@ -7,8 +7,14 @@ export {
 } from "./indexing";
 export {
   deriveJsonLdBlocks,
+  type FieldSuggestion,
+  type JsonLdArrayNode,
   type JsonLdBlock,
-  type JsonLdField,
+  type JsonLdNode,
+  type JsonLdObjectNode,
+  type JsonLdPrimitiveNode,
+  type NodeValidity,
+  type RichResultsReport,
 } from "./jsonld";
 export { deriveMetaView, type MetaView } from "./meta";
 export {

@@ -1,148 +1,194 @@
+import {
+  type RichResultsReport,
+  validateBlock,
+} from "../rich-results/validate";
 import type { PageData } from "../schema";
+import { isClass, propertyValidFor, suggestClass } from "../vocab/query";
 
-export interface JsonLdField {
-  key: string;
-  value: string;
+export type {
+  FieldSuggestion,
+  RichResultsReport,
+} from "../rich-results/validate";
+
+export interface NodeValidity {
+  readonly note?: string;
+  readonly status:
+    | "ok"
+    | "unknown-property"
+    | "wrong-domain"
+    | "missing-required";
 }
+
+export interface JsonLdObjectNode {
+  readonly children: readonly JsonLdNode[];
+  readonly key: string | null;
+  readonly kind: "object";
+  readonly path: string;
+  readonly type: string | null;
+  readonly validity: NodeValidity;
+}
+
+export interface JsonLdArrayNode {
+  readonly items: readonly JsonLdNode[];
+  readonly key: string;
+  readonly kind: "array";
+  readonly path: string;
+}
+
+export interface JsonLdPrimitiveNode {
+  readonly key: string;
+  readonly kind: "primitive";
+  readonly path: string;
+  readonly validity: NodeValidity;
+  readonly value: string | number | boolean | null;
+}
+
+export type JsonLdNode =
+  | JsonLdObjectNode
+  | JsonLdArrayNode
+  | JsonLdPrimitiveNode;
 
 export interface JsonLdBlock {
-  fields: JsonLdField[];
-  id: string;
-  note?: string;
-  raw: unknown;
-  type: string;
-  valid: boolean;
+  readonly id: string;
+  readonly raw: unknown;
+  readonly richResults: RichResultsReport | null;
+  readonly root: JsonLdNode;
+  readonly type: string;
+  readonly typeSuggestion: string | null;
+  readonly typeValid: boolean;
 }
 
-const KNOWN_TYPES: ReadonlySet<string> = new Set([
-  "Article",
-  "BlogPosting",
-  "BreadcrumbList",
-  "Event",
-  "FAQPage",
-  "HowTo",
-  "ImageObject",
-  "ItemList",
-  "LocalBusiness",
-  "NewsArticle",
-  "Offer",
-  "Organization",
-  "Person",
-  "Product",
-  "Recipe",
-  "Review",
-  "SearchAction",
-  "SoftwareApplication",
-  "VideoObject",
-  "WebPage",
-  "WebSite",
-]);
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
 
-function levenshtein(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
-  if (m === 0) {
-    return n;
-  }
-  if (n === 0) {
-    return m;
-  }
-  let prev: number[] = new Array(n + 1);
-  let curr: number[] = new Array(n + 1);
-  for (let j = 0; j <= n; j++) {
-    prev[j] = j;
-  }
-  for (let i = 1; i <= m; i++) {
-    curr[0] = i;
-    for (let j = 1; j <= n; j++) {
-      const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
-      const up = (prev[j] ?? 0) + 1;
-      const left = (curr[j - 1] ?? 0) + 1;
-      const diag = (prev[j - 1] ?? 0) + cost;
-      curr[j] = Math.min(up, left, diag);
-    }
-    [prev, curr] = [curr, prev];
-  }
-  return prev[n] ?? 0;
-}
+const escapePointer = (segment: string): string =>
+  segment.replace(/~/g, "~0").replace(/\//g, "~1");
 
-function suggest(type: string): string | null {
-  let best: string | null = null;
-  let bestDist = Number.POSITIVE_INFINITY;
-  for (const known of KNOWN_TYPES) {
-    const d = levenshtein(type.toLowerCase(), known.toLowerCase());
-    if (d < bestDist) {
-      bestDist = d;
-      best = known;
+const joinPath = (parent: string, segment: string | number): string =>
+  `${parent}/${typeof segment === "number" ? segment : escapePointer(segment)}`;
+
+const okValidity: NodeValidity = { status: "ok" };
+
+/** Resolve the schema.org `@type` of a record, or null when absent/non-string. */
+const readType = (obj: Record<string, unknown>): string | null => {
+  const t = obj["@type"];
+  if (typeof t === "string") {
+    return t;
+  }
+  if (Array.isArray(t)) {
+    for (const inner of t) {
+      if (typeof inner === "string") {
+        return inner;
+      }
     }
   }
-  return best !== null && bestDist > 0 && bestDist <= 2 ? best : null;
-}
+  return null;
+};
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
-function stringifyValue(v: unknown): string {
-  if (v === null || v === undefined) {
-    return "—";
+/**
+ * Build a tree node from any JSON value.
+ * @param key key under which this value sits on its parent (null at root)
+ * @param value the raw JSON value
+ * @param parentType the resolved schema.org `@type` of the enclosing object,
+ *   used to flag properties that are not valid for that type
+ * @param path JSON pointer to this node
+ */
+const buildNode = (
+  key: string | null,
+  value: unknown,
+  parentType: string | null,
+  path: string
+): JsonLdNode => {
+  if (Array.isArray(value)) {
+    return {
+      kind: "array",
+      key: key ?? "",
+      items: value.map((item, i) =>
+        buildNode(String(i), item, parentType, joinPath(path, i))
+      ),
+      path,
+    };
   }
-  if (typeof v === "string") {
-    return v;
-  }
-  if (typeof v === "number" || typeof v === "boolean") {
-    return String(v);
-  }
-  if (Array.isArray(v)) {
-    return `${v.length} items`;
-  }
-  if (isRecord(v)) {
-    const t = v["@type"];
-    return typeof t === "string" ? `{${t}}` : "{…}";
-  }
-  return "—";
-}
-
-function flattenFields(obj: Record<string, unknown>): JsonLdField[] {
-  const fields: JsonLdField[] = [];
-  for (const [key, value] of Object.entries(obj)) {
-    if (key === "@context" || key === "@type") {
-      continue;
+  if (isRecord(value)) {
+    const type = readType(value);
+    const childParentType = type ?? parentType;
+    const children: JsonLdNode[] = [];
+    for (const [childKey, childValue] of Object.entries(value)) {
+      if (childKey === "@context" || childKey === "@type") {
+        continue;
+      }
+      children.push(
+        buildNode(
+          childKey,
+          childValue,
+          childParentType,
+          joinPath(path, childKey)
+        )
+      );
     }
-    fields.push({ key, value: stringifyValue(value) });
+    const validity =
+      key !== null && parentType !== null && !propertyValidFor(key, parentType)
+        ? ({
+            status: "unknown-property",
+            note: `not valid for ${parentType} per schema.org`,
+          } satisfies NodeValidity)
+        : okValidity;
+    return { kind: "object", key, type, children, path, validity };
   }
-  return fields;
-}
+  const primitiveValue: string | number | boolean | null =
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+      ? value
+      : null;
+  const validity =
+    key !== null && parentType !== null && !propertyValidFor(key, parentType)
+      ? ({
+          status: "unknown-property",
+          note: `not valid for ${parentType} per schema.org`,
+        } satisfies NodeValidity)
+      : okValidity;
+  return {
+    kind: "primitive",
+    key: key ?? "",
+    value: primitiveValue,
+    path,
+    validity,
+  };
+};
 
-export function deriveJsonLdBlocks(page: PageData): JsonLdBlock[] {
-  return page.jsonLd.map((raw, idx): JsonLdBlock => {
+export const deriveJsonLdBlocks = (page: PageData): JsonLdBlock[] =>
+  page.jsonLd.map((raw, idx): JsonLdBlock => {
     const id = `ld${idx + 1}`;
     if (!isRecord(raw)) {
       return {
-        fields: [],
         id,
-        note: "not an object",
-        raw,
+        root: {
+          kind: "object",
+          key: null,
+          type: null,
+          children: [],
+          path: "",
+          validity: okValidity,
+        },
         type: "unknown",
-        valid: false,
+        typeValid: false,
+        typeSuggestion: null,
+        richResults: null,
+        raw,
       };
     }
-    const typeRaw = raw["@type"];
-    const type = typeof typeRaw === "string" ? typeRaw : "unknown";
-    const valid = KNOWN_TYPES.has(type);
-    const block: JsonLdBlock = {
-      fields: flattenFields(raw),
+    const resolvedType = readType(raw) ?? "unknown";
+    const typeValid = isClass(resolvedType);
+    const root = buildNode(null, raw, null, "") as JsonLdObjectNode;
+    return {
       id,
+      root,
+      type: resolvedType,
+      typeValid,
+      typeSuggestion: typeValid ? null : suggestClass(resolvedType),
+      richResults: validateBlock(raw, resolvedType),
       raw,
-      type,
-      valid,
     };
-    if (!valid) {
-      const hint = suggest(type);
-      if (hint !== null) {
-        block.note = `Did you mean ${hint}?`;
-      }
-    }
-    return block;
   });
-}

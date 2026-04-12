@@ -5,6 +5,8 @@ import { imagesAltRule } from "../src/rules/images-alt.js";
 import { canonicalRule, robotsRule } from "../src/rules/indexing.js";
 import { metaDescriptionRule } from "../src/rules/meta-description.js";
 import {
+  structuredRichResultsRecommendedRule,
+  structuredRichResultsRequiredRule,
   structuredUnknownTypeRule,
   structuredValidRule,
 } from "../src/rules/structured.js";
@@ -297,6 +299,87 @@ describe("structuredUnknownTypeRule", () => {
     const [finding] = structuredUnknownTypeRule.run(page);
     expect(finding?.severity).toBe("info");
     expect(finding?.context?.[0]?.value).toBe("MadeUp");
+  });
+});
+
+describe("structuredRichResultsRequiredRule", () => {
+  const fullArticle = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: "Title",
+    image: "https://example.com/a.png",
+    datePublished: "2026-04-12",
+    author: { "@type": "Person", name: "Jane" },
+    dateModified: "2026-04-12",
+    publisher: { "@type": "Organization", name: "Pub" },
+  };
+
+  it("returns nothing when no block matches a spec", () => {
+    const page = makePage({
+      jsonLd: [{ "@context": "https://schema.org", "@type": "WebPage" }],
+    });
+    expect(structuredRichResultsRequiredRule.run(page)).toEqual([]);
+  });
+
+  it("passes when all required fields present", () => {
+    const page = makePage({ jsonLd: [fullArticle] });
+    const [finding] = structuredRichResultsRequiredRule.run(page);
+    expect(finding?.severity).toBe("pass");
+    expect(finding?.id.endsWith("#pass")).toBe(true);
+  });
+
+  it("emits error finding when headline missing", () => {
+    const { headline: _headline, ...missingHeadline } = fullArticle;
+    const page = makePage({ jsonLd: [missingHeadline] });
+    const [finding] = structuredRichResultsRequiredRule.run(page);
+    expect(finding?.severity).toBe("error");
+    expect(finding?.context?.[0]?.value).toBe("/headline");
+    expect(finding?.grep).toBe("/headline");
+  });
+
+  it("matches NewsArticle via subtype", () => {
+    const page = makePage({
+      jsonLd: [{ ...fullArticle, "@type": "NewsArticle" }],
+    });
+    const [finding] = structuredRichResultsRequiredRule.run(page);
+    expect(finding?.severity).toBe("pass");
+  });
+});
+
+describe("structuredRichResultsRecommendedRule", () => {
+  const fullArticle = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: "Title",
+    image: "https://example.com/a.png",
+    datePublished: "2026-04-12",
+    author: { "@type": "Person", name: "Jane" },
+    dateModified: "2026-04-12",
+    publisher: { "@type": "Organization", name: "Pub" },
+    mainEntityOfPage: "https://example.com/a",
+    articleSection: "Tech",
+    articleBody: "Body.",
+    wordCount: 42,
+    keywords: ["a"],
+    inLanguage: "en",
+    isAccessibleForFree: true,
+    about: "x",
+    description: "desc",
+  };
+
+  it("passes when all recommended fields present", () => {
+    const page = makePage({ jsonLd: [fullArticle] });
+    const [finding] = structuredRichResultsRecommendedRule.run(page);
+    expect(finding?.severity).toBe("pass");
+  });
+
+  it("warns when dateModified missing", () => {
+    const { dateModified: _dateModified, ...missingDateModified } = fullArticle;
+    const page = makePage({ jsonLd: [missingDateModified] });
+    const [finding] = structuredRichResultsRecommendedRule.run(page);
+    expect(finding?.severity).toBe("warning");
+    expect(finding?.context?.[0]?.value).toBe("/dateModified");
+    expect(finding?.grep).toBe("/dateModified");
   });
 });
 

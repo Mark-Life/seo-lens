@@ -13,7 +13,8 @@
       "!packages/ui/src/hooks/**/*",
       "!packages/ui/src/lib/**/*",
       "!apps/extension/.wxt/**/*",
-      "!apps/extension/.output/**/*"
+      "!apps/extension/.output/**/*",
+      "!packages/seo-rules/scripts/vendor/**/*"
     ]
   },
   "overrides": [
@@ -27,7 +28,8 @@
       "linter": {
         "rules": {
           "style": {
-            "noMagicNumbers": "off"
+            "noMagicNumbers": "off",
+            "noNonNullAssertion": "off"
           }
         }
       }
