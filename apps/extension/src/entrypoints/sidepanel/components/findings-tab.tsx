@@ -3,7 +3,6 @@ import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import { categoryLabels } from "../lib/labels";
 import { CopyButton } from "./copy-button";
-import { SectionLabel } from "./section-label";
 
 const FILTERS: { key: Severity | "all"; label: string }[] = [
   { key: "all", label: "All" },
@@ -18,6 +17,13 @@ const severityDot: Record<Severity, string> = {
   warning: "bg-secondary",
   info: "bg-primary/70",
   pass: "bg-foreground/30",
+};
+
+const severityOrder: Record<Severity, number> = {
+  error: 0,
+  warning: 1,
+  info: 2,
+  pass: 3,
 };
 
 const severityLabel: Record<Severity, string> = {
@@ -47,25 +53,27 @@ function findingToText(f: AuditFinding): string {
   return lines.join("\n");
 }
 
-function reportToText(items: readonly AuditFinding[]): string {
+export function reportToText(items: readonly AuditFinding[]): string {
   return items.map(findingToText).join("\n\n---\n\n");
 }
 
-interface FindingsTabProps {
+interface FindingsSectionProps {
   readonly findings: readonly AuditFinding[];
 }
 
-export function FindingsTab({ findings }: FindingsTabProps) {
+export function FindingsSection({ findings }: FindingsSectionProps) {
   const [filter, setFilter] = useState<Severity | "all">("all");
   const [open, setOpen] = useState<Set<string>>(new Set());
 
-  const visible = useMemo(
-    () =>
+  const visible = useMemo(() => {
+    const list =
       filter === "all"
         ? findings
-        : findings.filter((f) => f.severity === filter),
-    [filter, findings]
-  );
+        : findings.filter((f) => f.severity === filter);
+    return [...list].sort(
+      (a, b) => severityOrder[a.severity] - severityOrder[b.severity]
+    );
+  }, [filter, findings]);
 
   function toggle(id: string) {
     setOpen((prev) => {
@@ -80,23 +88,7 @@ export function FindingsTab({ findings }: FindingsTabProps) {
   }
 
   return (
-    <div className="flex flex-col gap-5 px-5 py-6">
-      {/* HEADER + COPY FULL REPORT */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1">
-          <SectionLabel
-            hint={`${visible.length} of ${findings.length}`}
-            index="01"
-            title="Findings"
-          />
-        </div>
-        <CopyButton
-          label="Copy full report"
-          payload={reportToText(findings)}
-          size="sm"
-        />
-      </div>
-
+    <div className="mt-4 flex flex-col gap-4">
       {/* FILTER CHIPS */}
       <div className="flex flex-wrap gap-1.5">
         {FILTERS.map((f) => {

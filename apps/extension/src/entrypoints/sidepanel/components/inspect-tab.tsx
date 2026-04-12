@@ -9,7 +9,7 @@ import {
   type PageData,
 } from "@workspace/seo-rules";
 import { ChevronRight, Image as ImageIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CopyButton } from "./copy-button";
 import { SectionLabel } from "./section-label";
 
@@ -17,6 +17,41 @@ const indexingTone: Record<IndexingStatus, string> = {
   ok: "bg-primary",
   warn: "bg-secondary",
   bad: "bg-destructive",
+};
+
+interface RemoteImageProps {
+  readonly alt?: string;
+  readonly className?: string;
+  readonly iconSize?: string;
+  readonly src: string | null;
+}
+
+const RemoteImage = ({
+  src,
+  alt = "",
+  className = "",
+  iconSize = "size-7",
+}: RemoteImageProps) => {
+  const [errored, setErrored] = useState(false);
+  if (!src || errored) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        <ImageIcon className={`${iconSize} text-muted-foreground/50`} />
+      </div>
+    );
+  }
+  return (
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: onError is a load-failure signal, not user interaction
+    <img
+      alt={alt}
+      className={`absolute inset-0 size-full object-cover ${className}`}
+      decoding="async"
+      loading="lazy"
+      onError={() => setErrored(true)}
+      referrerPolicy="no-referrer"
+      src={src}
+    />
+  );
 };
 
 function MetaRow({ k, v }: { k: string; v: string | null }) {
@@ -127,9 +162,7 @@ export function InspectTab({ page }: InspectTabProps) {
           <div className="overflow-hidden rounded-md border border-border bg-card">
             <div className="relative aspect-[1200/630] w-full bg-gradient-to-br from-primary/15 via-muted to-secondary/15">
               <div className="grain absolute inset-0" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <ImageIcon className="size-7 text-muted-foreground/50" />
-              </div>
+              <RemoteImage alt="" src={social.og.image} />
             </div>
             <div className="border-border border-t px-3 py-2.5">
               <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
@@ -158,9 +191,7 @@ export function InspectTab({ page }: InspectTabProps) {
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
             <div className="relative aspect-[2/1] w-full bg-gradient-to-br from-secondary/15 via-muted to-primary/15">
               <div className="grain absolute inset-0" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <ImageIcon className="size-7 text-muted-foreground/50" />
-              </div>
+              <RemoteImage alt="" src={social.twitter.image} />
             </div>
             <div className="px-3 py-2">
               <div className="line-clamp-1 font-display text-[12px] text-foreground">
@@ -349,9 +380,11 @@ export function InspectTab({ page }: InspectTabProps) {
           {images.map((img) => (
             <li className="flex flex-col gap-1.5" key={img.src}>
               <div className="relative aspect-square overflow-hidden rounded-md border border-border bg-gradient-to-br from-muted to-card">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <ImageIcon className="size-5 text-muted-foreground/50" />
-                </div>
+                <RemoteImage
+                  alt={img.alt ?? ""}
+                  iconSize="size-5"
+                  src={img.src}
+                />
                 {img.missingAlt && (
                   <span className="absolute top-1.5 left-1.5 rounded-sm bg-destructive/90 px-1 py-0.5 font-mono text-[8px] text-destructive-foreground uppercase tracking-wider">
                     no alt

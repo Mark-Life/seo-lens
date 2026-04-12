@@ -331,8 +331,7 @@ Bite-sized, each independently verifiable.
 11. **✅ Rewrite** `sidepanel/app.tsx` to consume `AuditState`: render `<Loading/>`, `<Restricted/>`, `<Error/>`, or the three tabs. Move tab contents into a `Ready` wrapper that passes `page` + `result` down.
 12. **✅ Rewrite** `Header`**,** `OverviewTab`**,** `FindingsTab`**,** `InspectTab` to accept real data as props. Delete `data/placeholder.ts` when the last reference goes. Preserve the existing styling verbatim — this is a data-wiring change, not a redesign.
 13. **✅ Switch to fetched-HTML audits — Option A (§9).** Motivated by SPA mount-merging confirmed on Next.js App Router.
-14. **Copy/export buttons**: wire the Markdown and JSON export buttons in `OverviewTab` (currently no-ops). Markdown uses a `reportToMarkdown(result)` helper; JSON is `JSON.stringify(result, null, 2)`.
-15. **Manual test matrix** — see §7.
+14. **Manual test matrix** — see §7.
 
 ---
 
@@ -462,7 +461,43 @@ Go with **Option A** now. Option C (A+B hybrid) is the eventual destination once
 
 ---
 
-## 10. File Touch List
+## 10. Render Images in the Side Panel
+
+### The issue
+
+OG preview, Twitter card, and the image gallery in `InspectTab` currently render a placeholder `<ImageIcon/>` instead of the actual image. The data is already extracted (`social.og.image`, `social.twitter.image`, `images[].src`) — the UI just never wires it to an `<img>` tag.
+
+### Approach
+
+No `fetch` needed. The side panel runs in an extension document and can load arbitrary cross-origin URLs via a plain `<img src>` (browsers don't enforce CORS on image *display*, only on canvas readback). No new permissions, no background round-trip.
+
+### Requirements
+
+- **Absolute URLs.** Extracted `og:image`, `twitter:image`, and `<img src>` may be relative. Resolve against the page URL during extraction (`new URL(src, pageUrl).href`) so the side panel receives absolute hrefs. Do this in `extractFromDocument` for `images`, and in `deriveSocialView` (or upstream extraction) for OG/Twitter image fields.
+- **Graceful failure.** Hotlink-blocked, 404, or auth-gated images must not break the layout. Track per-image load error in local state; on `onError`, fall back to the existing `<ImageIcon/>` placeholder.
+- **Lazy + decoded async.** `loading="lazy" decoding="async" referrerPolicy="no-referrer"` on every `<img>`. `no-referrer` reduces hotlink-blocking; `lazy` matters for the gallery grid.
+- **Aspect preservation.** Keep the existing aspect-ratio containers (`aspect-[1200/630]`, `aspect-[2/1]`, `aspect-square`) and apply `object-cover` so off-spec images don't distort.
+- **No size/validation pass.** OG image dimension checks (1200×630 etc.) stay deferred per §8. Just render.
+
+### Implementation steps
+
+1. **Resolve image URLs to absolute in extraction.** Update `extractFromDocument` (`packages/seo-rules/src/extract.ts`) so `images[i].src`, `og:image`, and `twitter:image` are absolute. Use the document's URL (passed in, since the parsed `Document` from `DOMParser` has no base). Add a small `toAbsolute(href, base)` helper that returns `null` on invalid.
+2. **Schema.** No shape change — fields stay `string`. Add a JSDoc note that they're absolute post-extraction.
+3. `**InspectTab` — OG preview.** Replace the placeholder block at inspect-tab.tsx:128 with `{social.og.image ? <img .../> : <Placeholder/>}`. Use `object-cover absolute inset-0 size-full`.
+4. `**InspectTab` — Twitter card.** Same treatment at inspect-tab.tsx:159.
+5. `**InspectTab` — image gallery.** Replace the placeholder at inspect-tab.tsx:351. Same fallback pattern.
+6. **Per-image error fallback.** Extract a tiny `<RemoteImage src fallback />` component co-located in `inspect-tab.tsx` (or a sibling file) that owns the `errored` state. All three sites use it.
+7. **Manual verification.** Open the side panel on a page with OG image + several `<img>`s; confirm previews render, gallery populates, and a deliberately broken src falls back to the icon without console noise beyond the expected image load error.
+
+### Out of scope
+
+- Image dimension / file-size checks (still deferred — needs HEAD request + permission).
+- Caching fetched bytes (browser HTTP cache is enough).
+- Lightbox / click-to-enlarge.
+
+---
+
+## 11. File Touch List
 
 **New**
 

@@ -6,41 +6,42 @@ import type { PageUrl } from "./schema";
  * `location.href` may be unreliable (e.g., `<base>` overrides, `DOMParser`
  * returns `about:blank`).
  */
-export const extractFromDocument = (doc: Document, url: PageUrl): unknown => {
-  const title = doc.title || "";
-  const metaDescription =
-    doc.querySelector<HTMLMetaElement>('meta[name="description"]')?.content ||
-    "";
-  const canonical =
-    doc.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href || null;
+const toAbsolute = (href: string, base: string): string => {
+  try {
+    return new URL(href, base).href;
+  } catch {
+    return href;
+  }
+};
 
-  const headings = Array.from(
-    doc.querySelectorAll("h1, h2, h3, h4, h5, h6")
-  ).map((el) => ({
+const extractHeadings = (doc: Document) =>
+  Array.from(doc.querySelectorAll("h1, h2, h3, h4, h5, h6")).map((el) => ({
     level: Number.parseInt(el.tagName.substring(1), 10),
     text: el.textContent?.trim() || "",
   }));
 
-  const images = Array.from(doc.querySelectorAll("img")).map((img) => ({
-    src: img.getAttribute("src") || "",
-    alt: img.getAttribute("alt"),
-  }));
+const extractImages = (doc: Document, url: PageUrl) =>
+  Array.from(doc.querySelectorAll("img")).map((img) => {
+    const rawSrc = img.getAttribute("src") || "";
+    return {
+      src: rawSrc ? toAbsolute(rawSrc, url) : "",
+      alt: img.getAttribute("alt"),
+    };
+  });
 
-  let host: string;
+const hostOf = (url: string): string => {
   try {
-    host = new URL(url).hostname;
+    return new URL(url).hostname;
   } catch {
-    host = "";
+    return "";
   }
+};
 
-  const links = Array.from(doc.querySelectorAll("a[href]")).map((a) => {
+const extractLinks = (doc: Document, url: PageUrl) => {
+  const host = hostOf(url);
+  return Array.from(doc.querySelectorAll("a[href]")).map((a) => {
     const href = a.getAttribute("href") || "";
-    let linkHost = "";
-    try {
-      linkHost = new URL(href, url).hostname;
-    } catch {
-      // ignore
-    }
+    const linkHost = hostOf(new URL(href, url).href);
     return {
       href,
       text: a.textContent?.trim() || "",
@@ -48,27 +49,41 @@ export const extractFromDocument = (doc: Document, url: PageUrl): unknown => {
       rel: a.getAttribute("rel") || null,
     };
   });
+};
 
+const extractOpenGraph = (doc: Document, url: PageUrl) => {
   const openGraph: Record<string, string> = {};
   for (const el of doc.querySelectorAll<HTMLMetaElement>(
     'meta[property^="og:"]'
   )) {
     const property = el.getAttribute("property");
-    if (property) {
-      openGraph[property] = el.getAttribute("content") || "";
+    if (!property) {
+      continue;
     }
+    const content = el.getAttribute("content") || "";
+    openGraph[property] =
+      property === "og:image" && content ? toAbsolute(content, url) : content;
   }
+  return openGraph;
+};
 
+const extractTwitterCard = (doc: Document, url: PageUrl) => {
   const twitterCard: Record<string, string> = {};
   for (const el of doc.querySelectorAll<HTMLMetaElement>(
     'meta[name^="twitter:"]'
   )) {
     const name = el.getAttribute("name");
-    if (name) {
-      twitterCard[name] = el.getAttribute("content") || "";
+    if (!name) {
+      continue;
     }
+    const content = el.getAttribute("content") || "";
+    twitterCard[name] =
+      name === "twitter:image" && content ? toAbsolute(content, url) : content;
   }
+  return twitterCard;
+};
 
+const extractJsonLd = (doc: Document): unknown[] => {
   const jsonLd: unknown[] = [];
   for (const script of doc.querySelectorAll<HTMLScriptElement>(
     'script[type="application/ld+json"]'
@@ -79,21 +94,26 @@ export const extractFromDocument = (doc: Document, url: PageUrl): unknown => {
       // Skip invalid JSON-LD
     }
   }
+  return jsonLd;
+};
 
-  const robotsMeta =
-    doc.querySelector<HTMLMetaElement>('meta[name="robots"]')?.content || null;
-
+export const extractFromDocument = (doc: Document, url: PageUrl): unknown => {
   return {
     url,
-    title,
-    metaDescription,
-    canonical,
-    headings,
-    images,
-    links,
-    openGraph,
-    twitterCard,
-    jsonLd,
-    robotsMeta,
+    title: doc.title || "",
+    metaDescription:
+      doc.querySelector<HTMLMetaElement>('meta[name="description"]')?.content ||
+      "",
+    canonical:
+      doc.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href || null,
+    headings: extractHeadings(doc),
+    images: extractImages(doc, url),
+    links: extractLinks(doc, url),
+    openGraph: extractOpenGraph(doc, url),
+    twitterCard: extractTwitterCard(doc, url),
+    jsonLd: extractJsonLd(doc),
+    robotsMeta:
+      doc.querySelector<HTMLMetaElement>('meta[name="robots"]')?.content ||
+      null,
   };
 };

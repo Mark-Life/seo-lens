@@ -1,7 +1,7 @@
 import type { AuditResult } from "@workspace/seo-rules";
-import { Download } from "lucide-react";
 import { categoryLabels } from "../lib/labels";
 import { CopyButton } from "./copy-button";
+import { FindingsSection, reportToText } from "./findings-tab";
 import { ScoreGauge } from "./score-gauge";
 import { SectionLabel } from "./section-label";
 
@@ -35,20 +35,6 @@ const SEVERITY_ITEMS = [
     meaning: "Check is healthy",
   },
 ] as const;
-
-function buildSummaryText(result: AuditResult): string {
-  const lines = [
-    `SEO Lens — ${result.url}`,
-    `Score: ${result.score}/100`,
-    `Errors: ${result.counts.error} · Warnings: ${result.counts.warning} · Info: ${result.counts.info} · Passed: ${result.counts.pass}`,
-    "",
-    "Categories:",
-    ...result.categoryScores.map(
-      (c) => `  ${categoryLabels[c.id].padEnd(20)} ${c.score}/100`
-    ),
-  ];
-  return lines.join("\n");
-}
 
 interface OverviewTabProps {
   readonly result: AuditResult;
@@ -142,44 +128,21 @@ export function OverviewTab({ result }: OverviewTabProps) {
 
       <div className="rule-hair" />
 
-      {/* COPY + EXPORT */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <SectionLabel index="04" title="Take it with you" />
+      {/* FINDINGS */}
+      <section>
+        <div className="flex items-center justify-between gap-2">
+          <SectionLabel
+            hint={`${result.findings.length} total`}
+            index="04"
+            title="Findings"
+          />
           <CopyButton
-            label="Copy summary"
-            payload={buildSummaryText(result)}
+            label="Copy full report"
+            payload={reportToText(result.findings)}
             size="sm"
           />
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            className="group flex items-center justify-between rounded-md border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-foreground/40"
-            type="button"
-          >
-            <div className="flex flex-col">
-              <span className="font-display font-medium text-[13px]">
-                Markdown
-              </span>
-              <span className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
-                .md · for humans
-              </span>
-            </div>
-            <Download className="size-3.5 text-muted-foreground transition-colors group-hover:text-foreground" />
-          </button>
-          <button
-            className="group flex items-center justify-between rounded-md border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-foreground/40"
-            type="button"
-          >
-            <div className="flex flex-col">
-              <span className="font-display font-medium text-[13px]">JSON</span>
-              <span className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
-                .json · for tools
-              </span>
-            </div>
-            <Download className="size-3.5 text-muted-foreground transition-colors group-hover:text-foreground" />
-          </button>
-        </div>
+        <FindingsSection findings={result.findings} />
       </section>
 
       <div className="rule-hair" />

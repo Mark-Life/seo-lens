@@ -2,7 +2,6 @@ import type { AuditResult, AuditState, PageData } from "@workspace/seo-rules";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Match } from "effect";
 import { useState } from "react";
-import { FindingsTab } from "./components/findings-tab";
 import { Header } from "./components/header";
 import { InspectTab } from "./components/inspect-tab";
 import { OverviewTab } from "./components/overview-tab";
@@ -11,12 +10,11 @@ import { LoadingState } from "./components/states/loading";
 import { RestrictedState } from "./components/states/restricted";
 import { useAuditState } from "./hooks/use-audit-state";
 
-type TabKey = "overview" | "findings" | "inspect";
+type TabKey = "overview" | "inspect";
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: "overview", label: "Overview" },
-  { key: "findings", label: "Findings" },
-  { key: "inspect", label: "Inspect" },
+  { key: "overview", label: "Audit" },
+  { key: "inspect", label: "Metadata" },
 ];
 
 interface ReadyViewProps {
@@ -30,7 +28,7 @@ const ReadyView = ({ page, result }: ReadyViewProps) => {
 
   return (
     <>
-      <nav className="sticky top-[68px] z-10 border-border border-b bg-background/85 backdrop-blur-md">
+      <nav className="sticky top-[75px] z-10 border-border border-b bg-background/85 backdrop-blur-md">
         <ul className="flex items-stretch px-3">
           {TABS.map((t) => {
             const active = tab === t.key;
@@ -65,7 +63,6 @@ const ReadyView = ({ page, result }: ReadyViewProps) => {
 
       <main>
         {tab === "overview" && <OverviewTab result={result} />}
-        {tab === "findings" && <FindingsTab findings={result.findings} />}
         {tab === "inspect" && <InspectTab page={page} />}
       </main>
     </>
