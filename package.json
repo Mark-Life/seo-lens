@@ -10,11 +10,12 @@
     "format": "bunx --bun ultracite fix",
     "check": "bunx --bun ultracite check",
     "fix": "bunx --bun ultracite fix",
-    "prepare": "husky",
+    "prepare": "husky && effect-language-service patch",
     "upgrade": "bun run scripts/upgrade.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.0",
+    "@effect/language-service": "^0.85.1",
     "@types/bun": "^1.3.9",
     "@workspace/typescript-config": "workspace:*",
     "bun-types": "^1.3.9",
@@ -24,6 +25,9 @@
     "ultracite": "7.2.3"
   },
   "packageManager": "bun@1.3.9",
+  "overrides": {
+    "vite": "8.0.8"
+  },
   "workspaces": {
     "packages": [
       "apps/*",

@@ -3,12 +3,18 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "scripts": {
-    "typecheck": "tsc --noEmit"
+  "dependencies": {
+    "effect": "catalog:"
   },
   "devDependencies": {
+    "@effect/vitest": "^0.29.0",
     "@workspace/typescript-config": "workspace:*",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "exports": {
     ".": "./src/index.ts",
