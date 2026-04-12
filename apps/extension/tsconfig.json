@@ -17,5 +17,5 @@
       "@workspace/seo-rules/*": ["../../packages/seo-rules/src/*.ts"]
     }
   },
-  "include": ["src/**/*", ".wxt/wxt.d.ts"]
+  "include": ["src/**/*", "tests/**/*", ".wxt/wxt.d.ts"]
 }

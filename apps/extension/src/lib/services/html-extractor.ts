@@ -6,8 +6,12 @@ import {
   type TabId,
 } from "@workspace/seo-rules";
 import { Context, Effect, Layer, Schema } from "effect";
+import { parseHTML } from "linkedom";
 
 const decodePageData = Schema.decodeUnknown(PageData);
+
+const parseDoc = (html: string): Document =>
+  parseHTML(html).document as unknown as Document;
 
 export interface HtmlExtractorShape {
   readonly extract: (
@@ -28,7 +32,7 @@ export class HtmlExtractor extends Context.Tag("HtmlExtractor")<
       html: string
     ) {
       const doc = yield* Effect.try({
-        try: () => new DOMParser().parseFromString(html, "text/html"),
+        try: () => parseDoc(html),
         catch: (cause) => new ExtractionFailed({ tabId, cause }),
       });
       const raw = yield* Effect.try({
@@ -50,7 +54,7 @@ export class HtmlExtractor extends Context.Tag("HtmlExtractor")<
       extract: (tabId, url, html) =>
         Effect.try({
           try: () => {
-            const doc = new DOMParser().parseFromString(html, "text/html");
+            const doc = parseDoc(html);
             return extractFromDocument(doc, url);
           },
           catch: (cause) => new ExtractionFailed({ tabId, cause }),

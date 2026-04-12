@@ -68,6 +68,16 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
       TabNotReady: () => bus.publish(tabId, Loading.make()),
       ExtractionFailed: (e) =>
         bus.publish(tabId, AuditError.make({ message: String(e.cause) })),
+      FetchFailed: (e) =>
+        bus.publish(
+          tabId,
+          AuditError.make({
+            message:
+              e.status !== undefined
+                ? `Fetch failed (HTTP ${e.status}): ${String(e.cause)}`
+                : `Fetch failed: ${String(e.cause)}`,
+          })
+        ),
       AuditFailed: (e) =>
         bus.publish(tabId, AuditError.make({ message: String(e.cause) })),
     })
