@@ -62,13 +62,12 @@ export class BrowserApi extends Context.Tag("BrowserApi")<
       if (!tab || tab.id == null) {
         return yield* new NoActiveTab();
       }
-      if (tab.status !== "complete") {
-        return yield* new TabNotReady({ tabId });
-      }
       return {
         id: tabId,
         url: tab.url ?? "",
-        status: "complete" as const,
+        status: (tab.status === "complete" ? "complete" : "loading") as
+          | "complete"
+          | "loading",
       };
     });
 
@@ -89,9 +88,6 @@ export class BrowserApi extends Context.Tag("BrowserApi")<
     ) {
       if (isRestrictedUrl(tab.url)) {
         return yield* new RestrictedUrl({ url: tab.url });
-      }
-      if (tab.status !== "complete") {
-        return yield* new TabNotReady({ tabId: tab.id });
       }
       return tab;
     });

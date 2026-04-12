@@ -329,7 +329,7 @@ Bite-sized, each independently verifiable.
 9. **✅ Add `manifest.permissions`** `"tabs"` and `"webNavigation"` in `wxt.config.ts`. `activeTab` is not enough for background-initiated cross-tab messaging.
 10. **✅ Build** `PanelClient` **service +** `useRuntime` **/** `useAuditState` **hooks** in the side panel.
 11. **✅ Rewrite** `sidepanel/app.tsx` to consume `AuditState`: render `<Loading/>`, `<Restricted/>`, `<Error/>`, or the three tabs. Move tab contents into a `Ready` wrapper that passes `page` + `result` down.
-12. **Rewrite `Header`, `OverviewTab`, `FindingsTab`, `InspectTab`** to accept real data as props. Delete `data/placeholder.ts` when the last reference goes. Preserve the existing styling verbatim — this is a data-wiring change, not a redesign.
+12. **✅ Rewrite** `Header`**,** `OverviewTab`**,** `FindingsTab`**,** `InspectTab` to accept real data as props. Delete `data/placeholder.ts` when the last reference goes. Preserve the existing styling verbatim — this is a data-wiring change, not a redesign.
 13. **Copy/export buttons**: wire the Markdown and JSON export buttons in `OverviewTab` (currently no-ops). Markdown uses a `reportToMarkdown(result)` helper; JSON is `JSON.stringify(result, null, 2)`.
 14. **Manual test matrix** — see §7.
 

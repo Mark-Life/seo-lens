@@ -1,6 +1,8 @@
-import { audit } from "../data/placeholder";
+interface HeaderProps {
+  readonly url?: string;
+}
 
-export function Header() {
+export function Header({ url }: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-border border-b bg-background/85 px-5 pt-4 pb-3 backdrop-blur-md">
       <div className="flex items-baseline gap-2">
@@ -15,7 +17,7 @@ export function Header() {
       <div className="mt-2.5 flex items-center gap-2">
         <span className="size-1 rounded-full bg-primary/60" />
         <span className="truncate font-mono text-[11px] text-muted-foreground">
-          {audit.url}
+          {url ?? "—"}
         </span>
       </div>
     </header>

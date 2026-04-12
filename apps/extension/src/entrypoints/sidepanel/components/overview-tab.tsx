@@ -1,5 +1,6 @@
+import type { AuditResult } from "@workspace/seo-rules";
 import { Download } from "lucide-react";
-import { audit, categoryLabels } from "../data/placeholder";
+import { categoryLabels } from "../lib/labels";
 import { CopyButton } from "./copy-button";
 import { ScoreGauge } from "./score-gauge";
 import { SectionLabel } from "./section-label";
@@ -35,28 +36,32 @@ const SEVERITY_ITEMS = [
   },
 ] as const;
 
-function buildSummaryText() {
+function buildSummaryText(result: AuditResult): string {
   const lines = [
-    `SEO Lens — ${audit.url}`,
-    `Score: ${audit.score}/100`,
-    `Errors: ${audit.counts.error} · Warnings: ${audit.counts.warning} · Info: ${audit.counts.info} · Passed: ${audit.counts.pass}`,
+    `SEO Lens — ${result.url}`,
+    `Score: ${result.score}/100`,
+    `Errors: ${result.counts.error} · Warnings: ${result.counts.warning} · Info: ${result.counts.info} · Passed: ${result.counts.pass}`,
     "",
     "Categories:",
-    ...audit.categories.map(
+    ...result.categoryScores.map(
       (c) => `  ${categoryLabels[c.id].padEnd(20)} ${c.score}/100`
     ),
   ];
   return lines.join("\n");
 }
 
-export function OverviewTab() {
+interface OverviewTabProps {
+  readonly result: AuditResult;
+}
+
+export function OverviewTab({ result }: OverviewTabProps) {
   return (
     <div className="flex flex-col gap-7 px-5 py-6">
       {/* GAUGE */}
       <section>
         <SectionLabel hint="Live" index="01" title="The reading" />
         <div className="mt-4">
-          <ScoreGauge score={audit.score} />
+          <ScoreGauge score={result.score} />
         </div>
       </section>
 
@@ -88,7 +93,7 @@ export function OverviewTab() {
                 </span>
               </div>
               <span className="font-display font-light text-[24px] tabular-nums leading-none">
-                {audit.counts[item.key]}
+                {result.counts[item.key]}
               </span>
             </li>
           ))}
@@ -99,9 +104,13 @@ export function OverviewTab() {
 
       {/* CATEGORIES */}
       <section>
-        <SectionLabel hint="6 areas" index="03" title="By category" />
+        <SectionLabel
+          hint={`${result.categoryScores.length} areas`}
+          index="03"
+          title="By category"
+        />
         <ul className="mt-4 flex flex-col gap-3.5">
-          {audit.categories.map((cat) => {
+          {result.categoryScores.map((cat) => {
             let tone = "bg-destructive";
             if (cat.score >= 80) {
               tone = "bg-primary";
@@ -139,7 +148,7 @@ export function OverviewTab() {
           <SectionLabel index="04" title="Take it with you" />
           <CopyButton
             label="Copy summary"
-            payload={buildSummaryText()}
+            payload={buildSummaryText(result)}
             size="sm"
           />
         </div>

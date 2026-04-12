@@ -25,7 +25,7 @@ interface ReadyViewProps {
   readonly result: AuditResult;
 }
 
-const ReadyView = (_props: ReadyViewProps) => {
+const ReadyView = ({ page, result }: ReadyViewProps) => {
   const [tab, setTab] = useState<TabKey>("overview");
 
   return (
@@ -64,9 +64,9 @@ const ReadyView = (_props: ReadyViewProps) => {
       </nav>
 
       <main>
-        {tab === "overview" && <OverviewTab />}
-        {tab === "findings" && <FindingsTab />}
-        {tab === "inspect" && <InspectTab />}
+        {tab === "overview" && <OverviewTab result={result} />}
+        {tab === "findings" && <FindingsTab findings={result.findings} />}
+        {tab === "inspect" && <InspectTab page={page} />}
       </main>
     </>
   );
@@ -88,11 +88,12 @@ const renderState = (state: AuditState, onRefresh: () => void) =>
 
 export const App = () => {
   const { state, refresh } = useAuditState();
+  const url = state._tag === "Ready" ? state.page.url : undefined;
 
   return (
     <TooltipProvider delayDuration={150}>
       <div className="grain min-h-screen bg-background text-foreground">
-        <Header />
+        <Header url={url} />
 
         {renderState(state, refresh)}
 

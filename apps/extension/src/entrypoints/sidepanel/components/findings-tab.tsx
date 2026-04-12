@@ -1,11 +1,7 @@
+import type { AuditFinding, Severity } from "@workspace/seo-rules";
 import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  categoryLabels,
-  type Finding,
-  findings,
-  type Severity,
-} from "../data/placeholder";
+import { categoryLabels } from "../lib/labels";
 import { CopyButton } from "./copy-button";
 import { SectionLabel } from "./section-label";
 
@@ -31,13 +27,13 @@ const severityLabel: Record<Severity, string> = {
   pass: "Passed",
 };
 
-function findingToText(f: Finding): string {
+function findingToText(f: AuditFinding): string {
   const lines = [
     `[${f.severity.toUpperCase()}] ${f.ruleId}`,
     f.title,
     f.message,
   ];
-  if (f.context?.length) {
+  if (f.context && f.context.length > 0) {
     lines.push("");
     lines.push("Context:");
     for (const c of f.context) {
@@ -51,20 +47,24 @@ function findingToText(f: Finding): string {
   return lines.join("\n");
 }
 
-function reportToText(items: Finding[]): string {
+function reportToText(items: readonly AuditFinding[]): string {
   return items.map(findingToText).join("\n\n---\n\n");
 }
 
-export function FindingsTab() {
+interface FindingsTabProps {
+  readonly findings: readonly AuditFinding[];
+}
+
+export function FindingsTab({ findings }: FindingsTabProps) {
   const [filter, setFilter] = useState<Severity | "all">("all");
-  const [open, setOpen] = useState<Set<string>>(new Set(["f1"]));
+  const [open, setOpen] = useState<Set<string>>(new Set());
 
   const visible = useMemo(
     () =>
       filter === "all"
         ? findings
         : findings.filter((f) => f.severity === filter),
-    [filter]
+    [filter, findings]
   );
 
   function toggle(id: string) {

@@ -1,16 +1,15 @@
-import { ChevronRight, Image as ImageIcon } from "lucide-react";
 import {
-  breadcrumbs,
-  headings,
+  deriveBreadcrumbs,
+  deriveImageGallery,
+  deriveIndexingView,
+  deriveJsonLdBlocks,
+  deriveMetaView,
+  deriveSocialView,
   type IndexingStatus,
-  images,
-  indexing,
-  jsonld,
-  jsonldBlocks,
-  meta,
-  social,
-  twitter,
-} from "../data/placeholder";
+  type PageData,
+} from "@workspace/seo-rules";
+import { ChevronRight, Image as ImageIcon } from "lucide-react";
+import { useMemo } from "react";
 import { CopyButton } from "./copy-button";
 import { SectionLabel } from "./section-label";
 
@@ -20,19 +19,35 @@ const indexingTone: Record<IndexingStatus, string> = {
   bad: "bg-destructive",
 };
 
-function MetaRow({ k, v }: { k: string; v: string }) {
+function MetaRow({ k, v }: { k: string; v: string | null }) {
   return (
     <div className="kv-row py-1.5 text-[11px]">
       <span className="font-mono text-muted-foreground">{k}</span>
       <span className="kv-leader" />
       <span className="max-w-[220px] truncate font-mono text-foreground">
-        {v}
+        {v ?? "—"}
       </span>
     </div>
   );
 }
 
-export function InspectTab() {
+interface InspectTabProps {
+  readonly page: PageData;
+}
+
+export function InspectTab({ page }: InspectTabProps) {
+  const meta = useMemo(() => deriveMetaView(page), [page]);
+  const indexing = useMemo(() => deriveIndexingView(page), [page]);
+  const social = useMemo(() => deriveSocialView(page), [page]);
+  const jsonldBlocks = useMemo(() => deriveJsonLdBlocks(page), [page]);
+  const breadcrumbs = useMemo(
+    () => deriveBreadcrumbs(jsonldBlocks),
+    [jsonldBlocks]
+  );
+  const images = useMemo(() => deriveImageGallery(page), [page]);
+  const headings = page.headings;
+  const jsonldRaw = useMemo(() => JSON.stringify(page.jsonLd, null, 2), [page]);
+
   return (
     <div className="flex flex-col gap-8 px-5 py-6">
       {/* META TAGS */}
@@ -106,7 +121,7 @@ export function InspectTab() {
               Open Graph
             </span>
             <span className="font-mono text-[9px] text-muted-foreground/70">
-              og:type · {social.ogType}
+              og:type · {social.og.type ?? "—"}
             </span>
           </div>
           <div className="overflow-hidden rounded-md border border-border bg-card">
@@ -115,19 +130,16 @@ export function InspectTab() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <ImageIcon className="size-7 text-muted-foreground/50" />
               </div>
-              <span className="absolute right-2 bottom-2 rounded-sm bg-background/85 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
-                1024 × 512
-              </span>
             </div>
             <div className="border-border border-t px-3 py-2.5">
               <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
-                {social.domain}
+                {social.domain ?? "—"}
               </div>
               <div className="mt-0.5 line-clamp-1 font-display font-medium text-[13px]">
-                {social.ogTitle}
+                {social.og.title ?? "—"}
               </div>
               <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
-                {social.ogDescription}
+                {social.og.description ?? "—"}
               </div>
             </div>
           </div>
@@ -140,7 +152,7 @@ export function InspectTab() {
               Twitter card
             </span>
             <span className="font-mono text-[9px] text-muted-foreground/70">
-              {twitter.card}
+              {social.twitter.card ?? "—"}
             </span>
           </div>
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -152,22 +164,22 @@ export function InspectTab() {
             </div>
             <div className="px-3 py-2">
               <div className="line-clamp-1 font-display text-[12px] text-foreground">
-                {twitter.title}
+                {social.twitter.title ?? "—"}
               </div>
               <div className="line-clamp-1 text-[10px] text-muted-foreground">
-                {twitter.description}
+                {social.twitter.description ?? "—"}
               </div>
               <div className="mt-0.5 font-mono text-[9px] text-muted-foreground/70 uppercase tracking-wider">
-                {social.domain}
+                {social.domain ?? "—"}
               </div>
             </div>
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <span className="rounded-sm border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-              site · {twitter.site}
+              site · {social.twitter.site ?? "—"}
             </span>
             <span className="rounded-sm border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-              creator · {twitter.creator}
+              creator · {social.twitter.creator ?? "—"}
             </span>
           </div>
         </div>
@@ -176,38 +188,46 @@ export function InspectTab() {
       <div className="rule-hair" />
 
       {/* BREADCRUMBS */}
-      <section>
-        <SectionLabel hint="from JSON-LD" index="04" title="Breadcrumb trail" />
-        <nav
-          aria-label="Breadcrumb preview"
-          className="mt-3 flex flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2.5"
-        >
-          {breadcrumbs.map((crumb, idx) => {
-            const last = idx === breadcrumbs.length - 1;
-            return (
-              <div className="flex items-center gap-1.5" key={crumb.url}>
-                <span
-                  className={`font-display text-[12px] ${
-                    last
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {crumb.name}
-                </span>
-                {!last && (
-                  <ChevronRight
-                    aria-hidden
-                    className="size-3 text-muted-foreground/60"
-                  />
-                )}
-              </div>
-            );
-          })}
-        </nav>
-      </section>
+      {breadcrumbs.length > 0 && (
+        <>
+          <section>
+            <SectionLabel
+              hint="from JSON-LD"
+              index="04"
+              title="Breadcrumb trail"
+            />
+            <nav
+              aria-label="Breadcrumb preview"
+              className="mt-3 flex flex-wrap items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2.5"
+            >
+              {breadcrumbs.map((crumb, idx) => {
+                const last = idx === breadcrumbs.length - 1;
+                return (
+                  <div className="flex items-center gap-1.5" key={crumb.url}>
+                    <span
+                      className={`font-display text-[12px] ${
+                        last
+                          ? "font-medium text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {crumb.name}
+                    </span>
+                    {!last && (
+                      <ChevronRight
+                        aria-hidden
+                        className="size-3 text-muted-foreground/60"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+          </section>
 
-      <div className="rule-hair" />
+          <div className="rule-hair" />
+        </>
+      )}
 
       {/* HEADING TREE */}
       <section>
@@ -244,7 +264,7 @@ export function InspectTab() {
             index="06"
             title="Structured data"
           />
-          <CopyButton label="Copy JSON-LD" payload={jsonld} size="sm" />
+          <CopyButton label="Copy JSON-LD" payload={jsonldRaw} size="sm" />
         </div>
 
         {/* Validated block list */}
@@ -300,18 +320,20 @@ export function InspectTab() {
         </ul>
 
         {/* Raw source */}
-        <details className="group mt-3">
-          <summary className="flex cursor-pointer items-center gap-1.5 font-mono text-[9px] text-muted-foreground uppercase tracking-widest hover:text-foreground">
-            <ChevronRight
-              aria-hidden
-              className="size-3 transition-transform group-open:rotate-90"
-            />
-            View raw source
-          </summary>
-          <pre className="mt-2 max-h-72 overflow-auto rounded-md border border-border bg-foreground/5 p-3 font-mono text-[10.5px] text-foreground leading-relaxed">
-            <code>{jsonld}</code>
-          </pre>
-        </details>
+        {jsonldBlocks.length > 0 && (
+          <details className="group mt-3">
+            <summary className="flex cursor-pointer items-center gap-1.5 font-mono text-[9px] text-muted-foreground uppercase tracking-widest hover:text-foreground">
+              <ChevronRight
+                aria-hidden
+                className="size-3 transition-transform group-open:rotate-90"
+              />
+              View raw source
+            </summary>
+            <pre className="mt-2 max-h-72 overflow-auto rounded-md border border-border bg-foreground/5 p-3 font-mono text-[10.5px] text-foreground leading-relaxed">
+              <code>{jsonldRaw}</code>
+            </pre>
+          </details>
+        )}
       </section>
 
       <div className="rule-hair" />
@@ -330,14 +352,14 @@ export function InspectTab() {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <ImageIcon className="size-5 text-muted-foreground/50" />
                 </div>
-                {img.alt === null && (
+                {img.missingAlt && (
                   <span className="absolute top-1.5 left-1.5 rounded-sm bg-destructive/90 px-1 py-0.5 font-mono text-[8px] text-destructive-foreground uppercase tracking-wider">
                     no alt
                   </span>
                 )}
               </div>
               <div className="line-clamp-1 font-mono text-[9px] text-muted-foreground">
-                {img.src.split("/").pop()}
+                {img.filename}
               </div>
               <div className="line-clamp-2 text-[10px] text-foreground/80">
                 {img.alt ?? "—"}

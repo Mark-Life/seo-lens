@@ -5,7 +5,7 @@ import {
   Ready,
   Restricted,
   Running,
-  type TabId,
+  TabId,
 } from "@workspace/seo-rules";
 import {
   Effect,
@@ -74,6 +74,12 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
   );
 });
 
+interface BackgroundHandle {
+  readonly focusTab: (tabId: TabId, reason: string) => Effect.Effect<void>;
+}
+
+let handle: BackgroundHandle | null = null;
+
 const main = Effect.gen(function* () {
   const api = yield* BrowserApi;
   const bus = yield* AuditBus;
@@ -87,6 +93,14 @@ const main = Effect.gen(function* () {
     SubscriptionRef.set(activeTab, Option.some(tabId));
 
   const enqueue = (req: AuditRequest) => Queue.offer(queue, req);
+
+  handle = {
+    focusTab: (tabId, reason) =>
+      Effect.gen(function* () {
+        yield* setActive(tabId);
+        yield* enqueue({ tabId, reason });
+      }),
+  };
 
   // Bootstrap from current active tab.
   yield* api.getActiveTab().pipe(
@@ -215,32 +229,50 @@ const main = Effect.gen(function* () {
         })
       );
 
-      yield* portMessages.pipe(
-        Stream.tap((msg) =>
-          Effect.gen(function* () {
-            if (
-              typeof msg === "object" &&
-              msg !== null &&
-              (msg as { type?: unknown }).type === "refresh"
-            ) {
-              const current = yield* SubscriptionRef.get(activeTab);
-              if (Option.isSome(current)) {
-                yield* enqueue({
-                  tabId: current.value,
-                  reason: "manual",
-                });
-              }
-            }
-          })
-        ),
-        Stream.runDrain
-      );
+      const handleHello = (tabId: TabId) =>
+        Effect.gen(function* () {
+          yield* setActive(tabId);
+          yield* enqueue({ tabId, reason: "panel-hello" });
+        });
+
+      const handleRefresh = Effect.gen(function* () {
+        const current = yield* SubscriptionRef.get(activeTab);
+        if (Option.isSome(current)) {
+          yield* enqueue({ tabId: current.value, reason: "manual" });
+        }
+      });
+
+      const parsePortMessage = (msg: unknown) => {
+        if (typeof msg !== "object" || msg === null) {
+          return null;
+        }
+        const m = msg as { type?: unknown; tabId?: unknown };
+        if (m.type === "hello" && typeof m.tabId === "number") {
+          return { _tag: "hello" as const, tabId: TabId.make(m.tabId) };
+        }
+        if (m.type === "refresh") {
+          return { _tag: "refresh" as const };
+        }
+        return null;
+      };
+
+      const handlePortMessage = (msg: unknown) => {
+        const parsed = parsePortMessage(msg);
+        if (parsed === null) {
+          return Effect.void;
+        }
+        return parsed._tag === "hello"
+          ? handleHello(parsed.tabId)
+          : handleRefresh;
+      };
+
+      yield* portMessages.pipe(Stream.tap(handlePortMessage), Stream.runDrain);
 
       yield* Fiber.interrupt(pump);
     }).pipe(Effect.scoped);
 
   yield* ports.pipe(
-    Stream.mapEffect((port) => Effect.fork(handleConnection(port)), {
+    Stream.mapEffect((port) => Effect.forkDaemon(handleConnection(port)), {
       concurrency: "unbounded",
     }),
     Stream.runDrain,
@@ -253,8 +285,12 @@ export default defineBackground(() => {
   runtime.runFork(main);
 
   browser.action.onClicked.addListener(async (tab) => {
-    if (tab.id) {
-      await browser.sidePanel.open({ tabId: tab.id });
+    if (tab.id == null) {
+      return;
+    }
+    await browser.sidePanel.open({ tabId: tab.id });
+    if (handle) {
+      runtime.runFork(handle.focusTab(TabId.make(tab.id), "action-click"));
     }
   });
 });

@@ -9,6 +9,18 @@ export interface PanelClientShape {
   readonly states: Stream.Stream<AuditState>;
 }
 
+const queryActiveTabId = async (): Promise<number | null> => {
+  try {
+    const [tab] = await browser.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    return tab?.id ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const make = Effect.sync((): PanelClientShape => {
   let activePort: Browser.runtime.Port | null = null;
 
@@ -16,6 +28,15 @@ const make = Effect.sync((): PanelClientShape => {
     Effect.sync(() => {
       const port = browser.runtime.connect({ name: "sidepanel" });
       activePort = port;
+      queryActiveTabId().then((tabId) => {
+        if (tabId != null) {
+          try {
+            port.postMessage({ type: "hello", tabId });
+          } catch {
+            // port closed
+          }
+        }
+      });
 
       const onMessage = (msg: unknown) => {
         if (
