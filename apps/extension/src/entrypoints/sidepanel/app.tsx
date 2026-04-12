@@ -120,7 +120,18 @@ export const App = () => {
     state._tag === "Idle" ||
     state._tag === "Loading" ||
     state._tag === "Running";
-  const isRefreshing = isTransient && snapshot !== null;
+
+  // Delay showing skeletons so fast refreshes (cache hits, tab switches)
+  // don't produce a flicker on the gauge / category bars.
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  useEffect(() => {
+    if (!(isTransient && snapshot !== null)) {
+      setIsRefreshing(false);
+      return;
+    }
+    const timer = setTimeout(() => setIsRefreshing(true), 250);
+    return () => clearTimeout(timer);
+  }, [isTransient, snapshot]);
 
   const fallback = renderFallback(state, snapshot, refresh);
   const displayUrl =
