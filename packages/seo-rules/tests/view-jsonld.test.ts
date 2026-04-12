@@ -69,7 +69,7 @@ describe("deriveJsonLdBlocks tree model", () => {
     expect(block?.type).toBe("Product");
     expect(block?.typeValid).toBe(true);
     expect(block?.typeSuggestion).toBeNull();
-    expect(block?.richResults).toBeNull();
+    expect(block?.richResults?.spec).toBe("Product");
 
     const root = asObject(block!.root);
     expect(root.type).toBe("Product");

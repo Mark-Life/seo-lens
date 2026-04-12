@@ -510,7 +510,7 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 
 **Done when:** findings appear in the audit list for misconfigured Article JSON-LD.
 
-### Step 11 — Additional specs
+### ✅ Step 11 — Additional specs
 
 **Goal:** broaden coverage once the pipeline is proven.
 **Files:**
