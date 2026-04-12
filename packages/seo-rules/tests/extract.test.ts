@@ -49,6 +49,25 @@ const cases: readonly RootCase[] = [
     mustNotContain: ["Stale Route"],
   },
   {
+    name: "(c2) nested <main> tags → outermost main wins",
+    html: `<!doctype html><html><body>
+      <header><h1>Site</h1></header>
+      <main class="flex-1"><main class="inner"><h1>Nested Article</h1></main></main>
+    </body></html>`,
+    expectedSource: "main",
+    mustContain: ["Nested Article"],
+    mustNotContain: ["Site"],
+  },
+  {
+    name: "(c3) no <main>, body has huge inline <script> + content div → script ignored",
+    html: `<!doctype html><html><body>
+      <div><h1>Real Heading</h1><p>${"x".repeat(200)}</p></div>
+      <script>${"a".repeat(5000)}</script>
+    </body></html>`,
+    expectedSource: "largest-subtree",
+    mustContain: ["Real Heading"],
+  },
+  {
     name: "(d) mount-merged SPA, prior routes NOT hidden → largest-subtree (limitation: stale content may bleed in)",
     html: `<!doctype html><html><body>
       <div><h2>Tiny stale</h2></div>

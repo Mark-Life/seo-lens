@@ -25,6 +25,17 @@ const DISPLAY_NONE_RE = /display\s*:\s*none/i;
 const VISIBILITY_HIDDEN_RE = /visibility\s*:\s*hidden/i;
 const WHITESPACE_RE = /\s+/;
 
+const NON_CONTENT_TAGS = new Set([
+  "SCRIPT",
+  "STYLE",
+  "NOSCRIPT",
+  "TEMPLATE",
+  "LINK",
+  "META",
+]);
+
+const isNonContent = (el: Element): boolean => NON_CONTENT_TAGS.has(el.tagName);
+
 const isHidden = (el: Element): boolean => {
   if (el.hasAttribute("hidden")) {
     return true;
@@ -43,15 +54,33 @@ const isHidden = (el: Element): boolean => {
 };
 
 const visibleTextLength = (el: Element): number => {
-  if (isHidden(el)) {
+  if (isHidden(el) || isNonContent(el)) {
     return 0;
   }
   return (el.textContent ?? "").trim().length;
 };
 
-const pickSingleVisible = (els: ArrayLike<Element>): Element | null => {
+/**
+ * Pick a single visible element, collapsing nested duplicates to the outermost.
+ * Returns null when multiple unrelated visible elements remain (ambiguous).
+ */
+const pickOutermostVisible = (els: ArrayLike<Element>): Element | null => {
   const visible = Array.from(els).filter((el) => !isHidden(el));
-  return visible.length === 1 ? (visible[0] ?? null) : null;
+  if (visible.length === 0) {
+    return null;
+  }
+  const visibleSet = new Set(visible);
+  const outermost = visible.filter((el) => {
+    let p = el.parentElement;
+    while (p) {
+      if (visibleSet.has(p)) {
+        return false;
+      }
+      p = p.parentElement;
+    }
+    return true;
+  });
+  return outermost.length === 1 ? (outermost[0] ?? null) : null;
 };
 
 /**
@@ -61,12 +90,12 @@ const pickSingleVisible = (els: ArrayLike<Element>): Element | null => {
  * active route.
  */
 export const findAuditRoot = (doc: Document): AuditRoot => {
-  const main = pickSingleVisible(doc.querySelectorAll("main"));
+  const main = pickOutermostVisible(doc.querySelectorAll("main"));
   if (main && visibleTextLength(main) > 0) {
     return { element: main, source: "main" };
   }
 
-  const roleMain = pickSingleVisible(doc.querySelectorAll('[role="main"]'));
+  const roleMain = pickOutermostVisible(doc.querySelectorAll('[role="main"]'));
   if (roleMain && visibleTextLength(roleMain) > 0) {
     return { element: roleMain, source: "role-main" };
   }
