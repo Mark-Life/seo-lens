@@ -1,4 +1,7 @@
-import type { PageData } from "@workspace/seo-rules";
+import { PageData } from "@workspace/seo-rules";
+import { Either, Schema } from "effect";
+
+const decodePageData = Schema.decodeUnknownEither(PageData);
 
 export default defineContentScript({
   matches: ["<all_urls>"],
@@ -7,10 +10,17 @@ export default defineContentScript({
       (
         message: { type: string },
         _sender,
-        sendResponse: (data: PageData) => void
+        sendResponse: (data: unknown) => void
       ) => {
         if (message.type === "EXTRACT_PAGE_DATA") {
-          sendResponse(extractPageData());
+          const raw = extractPageData();
+          const decoded = decodePageData(raw);
+          if (Either.isLeft(decoded)) {
+            // Cheap safety net: surface schema drift in dev. Background
+            // re-validates and produces ExtractionFailed if needed.
+            console.warn("[seo-lens] PageData schema mismatch", decoded.left);
+          }
+          sendResponse(raw);
         }
         return true;
       }
@@ -18,7 +28,7 @@ export default defineContentScript({
   },
 });
 
-function extractPageData(): PageData {
+const extractPageData = () => {
   const doc = document;
 
   const title = doc.title || "";
@@ -98,4 +108,4 @@ function extractPageData(): PageData {
     jsonLd,
     robotsMeta,
   };
-}
+};

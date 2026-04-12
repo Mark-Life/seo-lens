@@ -325,8 +325,8 @@ Bite-sized, each independently verifiable.
 5. **✅ Add view-model derivations** (`packages/seo-rules/src/view/`). Export from package index.
 6. ✅ **Create service classes in `apps/extension/src/lib/services/*`*: `BrowserApi`, `Extractor`, `Auditor`, `AuditCache`, `AuditBus`. Each is a `Context.Tag` class with `static readonly layer` and `static readonly testLayer`. Service methods use `Effect.fn("Service.method")(...)` for traced spans.
 7. **✅ Rewrite** `entrypoints/background.ts` to build a `ManagedRuntime`, start the audit queue fiber, subscribe to tab/window/webNavigation events, and handle `runtime.onConnect` for the side panel port.
-8. **Keep `entrypoints/content.ts`** unchanged except for validating its output against `PageData` schema pre-send (cheap safety net).
-9. **Add `manifest.permissions`** `"tabs"` and `"webNavigation"` in `wxt.config.ts`. `activeTab` is not enough for background-initiated cross-tab messaging.
+8. **✅ Keep `entrypoints/content.ts`** unchanged except for validating its output against `PageData` schema pre-send (cheap safety net).
+9. **✅ Add `manifest.permissions`** `"tabs"` and `"webNavigation"` in `wxt.config.ts`. `activeTab` is not enough for background-initiated cross-tab messaging.
 10. **Build `PanelClient` service + `useRuntime` / `useAuditState` hooks** in the side panel.
 11. **Rewrite `sidepanel/app.tsx`** to consume `AuditState`: render `<Loading/>`, `<Restricted/>`, `<Error/>`, or the three tabs. Move tab contents into a `Ready` wrapper that passes `page` + `result` down.
 12. **Rewrite `Header`, `OverviewTab`, `FindingsTab`, `InspectTab`** to accept real data as props. Delete `data/placeholder.ts` when the last reference goes. Preserve the existing styling verbatim — this is a data-wiring change, not a redesign.

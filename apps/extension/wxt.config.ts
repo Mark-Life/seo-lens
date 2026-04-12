@@ -7,7 +7,7 @@ export default defineConfig({
     name: "SEO Lens",
     description: "Instant SEO auditing for any webpage",
     version: "0.0.1",
-    permissions: ["activeTab", "sidePanel"],
+    permissions: ["activeTab", "sidePanel", "tabs", "webNavigation"],
     side_panel: {
       default_path: "sidepanel.html",
     },
