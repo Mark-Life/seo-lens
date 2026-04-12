@@ -1,5 +1,6 @@
 import type { AuditResult } from "@workspace/seo-rules";
 import { categoryLabels } from "../lib/labels";
+import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
 import { CopyButton } from "./copy-button";
 import { FindingsSection, reportToText } from "./findings-tab";
 import { ScoreGauge } from "./score-gauge";
@@ -41,13 +42,18 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ result }: OverviewTabProps) {
+  const refreshing = useIsRefreshing();
   return (
     <div className="flex flex-col gap-7 px-5 py-6">
       {/* GAUGE */}
       <section>
         <SectionLabel hint="Live" index="01" title="The reading" />
         <div className="mt-4">
-          <ScoreGauge score={result.score} />
+          {refreshing ? (
+            <DataSlot className="h-24 w-full rounded-md" />
+          ) : (
+            <ScoreGauge score={result.score} />
+          )}
         </div>
       </section>
 
@@ -79,7 +85,9 @@ export function OverviewTab({ result }: OverviewTabProps) {
                 </span>
               </div>
               <span className="font-display font-light text-[24px] tabular-nums leading-none">
-                {result.counts[item.key]}
+                <DataSlot className="inline-block h-5 w-6 align-middle">
+                  {result.counts[item.key]}
+                </DataSlot>
               </span>
             </li>
           ))}
@@ -111,14 +119,18 @@ export function OverviewTab({ result }: OverviewTabProps) {
                   </span>
                   <span className="kv-leader" />
                   <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
-                    {cat.score}
+                    <DataSlot className="inline-block h-3 w-6 align-middle">
+                      {cat.score}
+                    </DataSlot>
                   </span>
                 </div>
                 <div className="h-[3px] w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={`h-full rounded-full ${tone} transition-[width] duration-700`}
-                    style={{ width: `${cat.score}%` }}
-                  />
+                  {!refreshing && (
+                    <div
+                      className={`h-full rounded-full ${tone} transition-[width] duration-700`}
+                      style={{ width: `${cat.score}%` }}
+                    />
+                  )}
                 </div>
               </li>
             );
@@ -142,7 +154,15 @@ export function OverviewTab({ result }: OverviewTabProps) {
             size="sm"
           />
         </div>
-        <FindingsSection findings={result.findings} />
+        {refreshing ? (
+          <div className="mt-4 flex flex-col gap-2">
+            <DataSlot className="h-10 w-full rounded-md" />
+            <DataSlot className="h-10 w-full rounded-md" />
+            <DataSlot className="h-10 w-full rounded-md" />
+          </div>
+        ) : (
+          <FindingsSection findings={result.findings} />
+        )}
       </section>
 
       <div className="rule-hair" />
