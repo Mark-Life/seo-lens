@@ -48,7 +48,7 @@
         "noConsole": "off"
       },
       "style": {
-        "noMagicNumbers": "warn",
+        "noMagicNumbers": "off", // TODO: enable when mock UI is removed
         "useConsistentTypeDefinitions": {
           "level": "error",
           "options": {
