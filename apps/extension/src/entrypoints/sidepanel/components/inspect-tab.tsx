@@ -8,7 +8,7 @@ import {
   type IndexingStatus,
   type PageData,
 } from "@workspace/seo-rules";
-import { ChevronRight, Image as ImageIcon } from "lucide-react";
+import { AlertTriangle, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
 import { CopyButton } from "./copy-button";
@@ -369,17 +369,25 @@ export function InspectTab({ page }: InspectTabProps) {
                     src={img.src}
                   />
                   {img.missingAlt && (
-                    <span className="absolute top-1.5 left-1.5 rounded-sm bg-destructive/90 px-1 py-0.5 font-mono text-[8px] text-destructive-foreground uppercase tracking-wider">
-                      no alt
+                    <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-sm bg-destructive/90 px-1 py-0.5 font-mono text-[8px] text-destructive-foreground uppercase tracking-wider">
+                      <AlertTriangle className="size-2.5" />
+                      no alt text
                     </span>
                   )}
                 </div>
                 <div className="line-clamp-1 font-mono text-[9px] text-muted-foreground">
                   {img.filename}
                 </div>
-                <div className="line-clamp-2 text-[10px] text-foreground/80">
-                  {img.alt ?? "—"}
-                </div>
+                {img.missingAlt ? (
+                  <div className="line-clamp-2 inline-flex items-center gap-1 text-[10px] text-destructive">
+                    <AlertTriangle className="size-2.5 shrink-0" />
+                    no alt text
+                  </div>
+                ) : (
+                  <div className="line-clamp-2 text-[10px] text-foreground/80">
+                    {img.alt}
+                  </div>
+                )}
               </li>
             ))}
         </ul>

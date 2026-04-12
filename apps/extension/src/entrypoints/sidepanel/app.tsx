@@ -33,7 +33,7 @@ interface ReadyViewProps {
 
 const ReadyView = ({ page, result, tab, onTabChange }: ReadyViewProps) => (
   <>
-    <nav className="sticky top-[75px] z-10 border-border border-b bg-background/85 backdrop-blur-md">
+    <nav className="sticky top-[83.5px] z-10 border-border border-b bg-background/85 backdrop-blur-md">
       <ul className="flex items-stretch px-3">
         {TABS.map((t) => {
           const active = tab === t.key;
@@ -140,7 +140,11 @@ export const App = () => {
   return (
     <TooltipProvider delayDuration={150}>
       <div className="grain min-h-screen bg-background text-foreground">
-        <Header url={displayUrl} />
+        <Header
+          isRefreshing={isTransient}
+          onRefresh={refresh}
+          url={displayUrl}
+        />
 
         {fallback ??
           (snapshot && (

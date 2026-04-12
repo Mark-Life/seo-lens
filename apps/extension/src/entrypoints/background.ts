@@ -32,9 +32,12 @@ interface AuditRequest {
   readonly tabId: TabId;
 }
 
+const SETTLE_DELAY = "1800 millis";
+
 const auditTab = Effect.fn("Background.auditTab")(function* (
   tabId: TabId,
-  reason: string
+  reason: string,
+  scheduleSettle: (tabId: TabId) => Effect.Effect<void>
 ) {
   const cache = yield* AuditCache;
   const extractor = yield* Extractor;
@@ -49,7 +52,8 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
     if (
       Option.isSome(cached) &&
       cached.value.url === page.url &&
-      reason !== "manual"
+      reason !== "manual" &&
+      reason !== "settle"
     ) {
       yield* bus.publish(
         tabId,
@@ -60,6 +64,9 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
     const result = yield* auditor.audit(page);
     yield* cache.set(tabId, { url: page.url, result, at: Date.now() });
     yield* bus.publish(tabId, Ready.make({ page, result }));
+    if (page.headings.length === 0 && reason !== "settle") {
+      yield* scheduleSettle(tabId);
+    }
   });
 
   yield* program.pipe(
@@ -83,6 +90,7 @@ let handle: BackgroundHandle | null = null;
 const main = Effect.gen(function* () {
   const api = yield* BrowserApi;
   const bus = yield* AuditBus;
+  const cache = yield* AuditCache;
 
   const queue = yield* Queue.sliding<AuditRequest>(16);
   const activeTab = yield* SubscriptionRef.make<Option.Option<TabId>>(
@@ -93,6 +101,13 @@ const main = Effect.gen(function* () {
     SubscriptionRef.set(activeTab, Option.some(tabId));
 
   const enqueue = (req: AuditRequest) => Queue.offer(queue, req);
+
+  const scheduleSettle = (tabId: TabId) =>
+    Effect.gen(function* () {
+      yield* Effect.sleep(SETTLE_DELAY);
+      yield* cache.invalidate(tabId);
+      yield* enqueue({ tabId, reason: "settle" });
+    }).pipe(Effect.forkDaemon, Effect.asVoid);
 
   handle = {
     focusTab: (tabId, reason) =>
@@ -162,7 +177,7 @@ const main = Effect.gen(function* () {
     GroupBy.evaluate((_key, inner) =>
       inner.pipe(
         Stream.debounce("500 millis"),
-        Stream.mapEffect((r) => auditTab(r.tabId, r.reason))
+        Stream.mapEffect((r) => auditTab(r.tabId, r.reason, scheduleSettle))
       )
     ),
     Stream.runDrain,
