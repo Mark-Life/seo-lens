@@ -34,7 +34,9 @@
       "packages/*"
     ],
     "catalog": {
-      "effect": "3.21.0"
+      "effect": "3.21.0",
+      "@effect/platform": "0.96.0",
+      "@effect/platform-browser": "0.76.0"
     }
   }
 }

@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { TabId } from "./schema";
+import { PageUrl, TabId } from "./schema";
 
 export class ExtractionFailed extends Schema.TaggedError<ExtractionFailed>()(
   "ExtractionFailed",
@@ -25,6 +25,15 @@ export class RestrictedUrl extends Schema.TaggedError<RestrictedUrl>()(
   "RestrictedUrl",
   {
     url: Schema.String,
+  }
+) {}
+
+export class FetchFailed extends Schema.TaggedError<FetchFailed>()(
+  "FetchFailed",
+  {
+    url: PageUrl,
+    status: Schema.optional(Schema.Number),
+    cause: Schema.Defect,
   }
 ) {}
 

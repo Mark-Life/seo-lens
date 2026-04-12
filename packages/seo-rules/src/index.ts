@@ -26,10 +26,12 @@ export { runAudit } from "./engine";
 export {
   AuditFailed,
   ExtractionFailed,
+  FetchFailed,
   NoActiveTab,
   RestrictedUrl,
   TabNotReady,
 } from "./errors";
+export { extractFromDocument } from "./extract";
 export { headingsRule } from "./rules/headings";
 export { headingsSkipRule } from "./rules/headings-skip";
 export { imagesAltRule } from "./rules/images-alt";

@@ -8,6 +8,7 @@ export default defineConfig({
     description: "Instant SEO auditing for any webpage",
     version: "0.0.1",
     permissions: ["activeTab", "sidePanel", "tabs", "webNavigation"],
+    host_permissions: ["<all_urls>"],
     side_panel: {
       default_path: "sidepanel.html",
     },
