@@ -377,8 +377,8 @@ export function InspectTab({ page }: InspectTabProps) {
           title="Images & alt text"
         />
         <ul className="mt-4 grid grid-cols-2 gap-3">
-          {images.map((img) => (
-            <li className="flex flex-col gap-1.5" key={img.src}>
+          {images.map((img, idx) => (
+            <li className="flex flex-col gap-1.5" key={`${img.src}-${idx}`}>
               <div className="relative aspect-square overflow-hidden rounded-md border border-border bg-gradient-to-br from-muted to-card">
                 <RemoteImage
                   alt={img.alt ?? ""}

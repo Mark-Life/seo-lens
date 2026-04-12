@@ -161,7 +161,7 @@ const main = Effect.gen(function* () {
     Stream.groupByKey((r) => r.tabId),
     GroupBy.evaluate((_key, inner) =>
       inner.pipe(
-        Stream.debounce("200 millis"),
+        Stream.debounce("500 millis"),
         Stream.mapEffect((r) => auditTab(r.tabId, r.reason))
       )
     ),
