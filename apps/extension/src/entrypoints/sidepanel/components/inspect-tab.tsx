@@ -34,6 +34,11 @@ const RemoteImage = ({
   iconSize = "size-7",
 }: RemoteImageProps) => {
   const [errored, setErrored] = useState(false);
+  const [lastSrc, setLastSrc] = useState(src);
+  if (src !== lastSrc) {
+    setLastSrc(src);
+    setErrored(false);
+  }
   if (!src || errored) {
     return (
       <div className="absolute inset-0 flex items-center justify-center">
