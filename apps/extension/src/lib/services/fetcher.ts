@@ -23,6 +23,10 @@ export class Fetcher extends Context.Tag("Fetcher")<Fetcher, FetcherShape>() {
       const client = yield* HttpClient.HttpClient;
 
       const fetch = Effect.fn("Fetcher.fetch")(function* (url: PageUrl) {
+        yield* Effect.logDebug("fetch start").pipe(
+          Effect.annotateLogs({ url, userAgent: USER_AGENT })
+        );
+        const started = Date.now();
         const request = HttpClientRequest.get(url).pipe(
           HttpClientRequest.setHeader("User-Agent", USER_AGENT)
         );
@@ -36,6 +40,13 @@ export class Fetcher extends Context.Tag("Fetcher")<Fetcher, FetcherShape>() {
               ),
           })
         );
+        yield* Effect.logDebug("fetch response").pipe(
+          Effect.annotateLogs({
+            url,
+            status: response.status,
+            elapsedMs: Date.now() - started,
+          })
+        );
         if (response.status < 200 || response.status >= 300) {
           return yield* new FetchFailed({
             url,
@@ -43,13 +54,22 @@ export class Fetcher extends Context.Tag("Fetcher")<Fetcher, FetcherShape>() {
             cause: `HTTP ${response.status}`,
           });
         }
-        return yield* response.text.pipe(
+        const body = yield* response.text.pipe(
           Effect.catchTag("ResponseError", (cause) =>
             Effect.fail(
               new FetchFailed({ url, status: response.status, cause })
             )
           )
         );
+        yield* Effect.logDebug("fetch body").pipe(
+          Effect.annotateLogs({
+            url,
+            status: response.status,
+            bytes: body.length,
+            totalMs: Date.now() - started,
+          })
+        );
+        return body;
       });
 
       return Fetcher.of({

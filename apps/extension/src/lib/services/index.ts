@@ -1,4 +1,5 @@
 import { Layer } from "effect";
+import { LoggerLive } from "../logger";
 import { Auditor } from "./auditor";
 import { BrowserApi } from "./browser-api";
 import { AuditBus } from "./bus";
@@ -22,5 +23,6 @@ export const appLayer = Layer.mergeAll(
   Extractor.layer.pipe(
     Layer.provide([BrowserApi.layer, Fetcher.layer, HtmlExtractor.layer])
   ),
-  BrowserApi.layer
+  BrowserApi.layer,
+  LoggerLive
 );

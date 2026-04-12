@@ -1,8 +1,9 @@
 import { Layer, ManagedRuntime } from "effect";
 import { createContext, useContext } from "react";
+import { LoggerLive } from "./logger";
 import { PanelClient } from "./services/panel-client";
 
-export const panelLayer = Layer.mergeAll(PanelClient.layer);
+export const panelLayer = Layer.mergeAll(PanelClient.layer, LoggerLive);
 
 export type PanelRuntime = ManagedRuntime.ManagedRuntime<
   Layer.Layer.Success<typeof panelLayer>,
