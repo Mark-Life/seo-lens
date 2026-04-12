@@ -405,7 +405,7 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 
 **Done when:** both `KNOWN_TYPES` deleted; `bun test` green; no references to the removed constants.
 
-### Step 5 — Tree view model
+### ✅ Step 5 — Tree view model
 
 **Goal:** replace flat `JsonLdField[]` with recursive `JsonLdNode` tree.
 **Files:**

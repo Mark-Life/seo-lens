@@ -340,7 +340,7 @@ export function InspectTab({ page }: InspectTabProps) {
             jsonldBlocks.map((block) => (
               <li
                 className={`overflow-hidden rounded-md border bg-card ${
-                  block.valid
+                  block.typeValid
                     ? "border-border"
                     : "border-destructive/50 ring-1 ring-destructive/20"
                 }`}
@@ -349,39 +349,23 @@ export function InspectTab({ page }: InspectTabProps) {
                 <div className="flex items-center gap-2 border-border/60 border-b px-3 py-2">
                   <span
                     className={`font-mono text-[9px] uppercase tracking-wider ${
-                      block.valid ? "text-primary" : "text-destructive"
+                      block.typeValid ? "text-primary" : "text-destructive"
                     }`}
                   >
-                    {block.valid ? "schema.org ✓" : "schema.org ✕"}
+                    {block.typeValid ? "schema.org ✓" : "schema.org ✕"}
                   </span>
                   <span
                     className={`font-display text-[12px] ${
-                      block.valid ? "text-foreground" : "text-destructive"
+                      block.typeValid ? "text-foreground" : "text-destructive"
                     }`}
                   >
                     {block.type}
                   </span>
-                  {block.note && (
+                  {block.typeSuggestion && (
                     <span className="ml-auto font-mono text-[9px] text-destructive/90 italic">
-                      {block.note}
+                      Did you mean {block.typeSuggestion}?
                     </span>
                   )}
-                </div>
-                <div className="flex flex-col px-3 py-2">
-                  {block.fields.map((f, idx) => (
-                    <div
-                      className="kv-row text-[11px]"
-                      key={`${block.id}-${idx}`}
-                    >
-                      <span className="font-mono text-muted-foreground">
-                        {f.key}
-                      </span>
-                      <span className="kv-leader" />
-                      <span className="max-w-[180px] truncate font-mono text-foreground">
-                        {f.value}
-                      </span>
-                    </div>
-                  ))}
                 </div>
               </li>
             ))}

@@ -28,7 +28,8 @@
       "linter": {
         "rules": {
           "style": {
-            "noMagicNumbers": "off"
+            "noMagicNumbers": "off",
+            "noNonNullAssertion": "off"
           }
         }
       }
