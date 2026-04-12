@@ -5,6 +5,7 @@ Plan for replacing the side panel's placeholder data with a live, reactive audit
 ---
 
 > **Note on existing code:**
+>
 > - **Side panel UI (`apps/extension/src/entrypoints/sidepanel/`) is the target design** — it represents what we want the product to look and feel like. Preserve markup, styling, tab layout, and component structure. This plan is about feeding it real data, not redesigning it.
 > - **Everything else — the content script, background, and the entire `packages/seo-rules` package — is a throwaway spike** with no Effect, no schemas, no real error handling. Treat it as a reference for what data we can extract, not as code to preserve. Delete, rename, or rewrite freely. The engine in particular should be built fresh around Effect + Schema rather than patched.
 
@@ -125,13 +126,13 @@ Tests additionally pull in `@effect/vitest` + `vitest` as devDeps (see §7).
 
 #### Deferred — pull in when needed, not now
 
-- **`@effect/platform` + `@effect/platform-browser`** — only when we start making `fetch` calls (e.g., OG image size check, future remote rules). `FetchHttpClient.layer` works fine inside the MV3 extension service worker because `fetch` is a standard web global there. Gives us typed `Schema` response decoding, retries, timeouts, and interruption-aware `AbortController` wiring. Not needed for extraction/audit which are local-only.
-- **`@effect/rpc`** — only if the side-panel ↔ background port protocol grows past ~3 message types. For now, a `Schema.Union` of tagged port messages decoded with `Schema.decodeUnknown` is simpler and needs no transport adapter (no official `chrome.runtime.Port` transport exists).
-- **`@effect/opentelemetry`** — only if we want to export `Effect.fn` spans to a real collector. Local dev can rely on `Logger.pretty`.
+- `**@effect/platform` + `@effect/platform-browser**` — only when we start making `fetch` calls (e.g., OG image size check, future remote rules). `FetchHttpClient.layer` works fine inside the MV3 extension service worker because `fetch` is a standard web global there. Gives us typed `Schema` response decoding, retries, timeouts, and interruption-aware `AbortController` wiring. Not needed for extraction/audit which are local-only.
+- `**@effect/rpc**` — only if the side-panel ↔ background port protocol grows past ~3 message types. For now, a `Schema.Union` of tagged port messages decoded with `Schema.decodeUnknown` is simpler and needs no transport adapter (no official `chrome.runtime.Port` transport exists).
+- `**@effect/opentelemetry**` — only if we want to export `Effect.fn` spans to a real collector. Local dev can rely on `Logger.pretty`.
 
 #### Not applicable
 
-- **`@effect/platform-browser`'s `BrowserWorker` / `BrowserWorkerRunner`** — targets **Web Workers** (`new Worker(url)`), a page-spawned background thread. Our background script is an **MV3 extension service worker** — a different execution model with `chrome.*` APIs, event-driven wakeup, and ~30s idle termination. The two are unrelated despite the name collision. Don't import it.
+- `**@effect/platform-browser`'s `BrowserWorker` / `BrowserWorkerRunner**` — targets **Web Workers** (`new Worker(url)`), a page-spawned background thread. Our background script is an **MV3 extension service worker** — a different execution model with `chrome.`* APIs, event-driven wakeup, and ~30s idle termination. The two are unrelated despite the name collision. Don't import it.
 
 ### Branded primitives
 
@@ -190,11 +191,11 @@ Each service is a `Context.Tag` class with `static readonly layer` / `static rea
 
 Defined in `apps/extension/src/lib/services/`:
 
-- **`BrowserApi`** — thin wrapper around `browser.tabs`, `browser.runtime`, `browser.webNavigation`. Methods return Effects; errors lifted to tagged errors. Ships a `testLayer` backed by an in-memory tab map.
-- **`Extractor`** — `extract(tabId): Effect<PageData, ExtractionFailed | RestrictedUrl | TabNotReady, BrowserApi>`. Sends `EXTRACT_PAGE_DATA`, validates the response with `Schema.decodeUnknown(PageData)`, times out at 2s.
-- **`Auditor`** — `audit(page: PageData): Effect<AuditResult, AuditFailed>`. Wraps `runAudit` from `@workspace/seo-rules`.
-- **`AuditCache`** — in-memory `Map<TabId, { url, result, at }>`. `get` / `set` / `invalidate`. TTL 30s; invalidated on `tabs.onUpdated`.
-- **`AuditBus`** — holds a `SubscriptionRef<AuditState>` (or `PubSub<AuditState>` + `Ref`) per `TabId`. Panel subscribes; background publishes.
+- `**BrowserApi**` — thin wrapper around `browser.tabs`, `browser.runtime`, `browser.webNavigation`. Methods return Effects; errors lifted to tagged errors. Ships a `testLayer` backed by an in-memory tab map.
+- `**Extractor**` — `extract(tabId): Effect<PageData, ExtractionFailed | RestrictedUrl | TabNotReady, BrowserApi>`. Sends `EXTRACT_PAGE_DATA`, validates the response with `Schema.decodeUnknown(PageData)`, times out at 2s.
+- `**Auditor**` — `audit(page: PageData): Effect<AuditResult, AuditFailed>`. Wraps `runAudit` from `@workspace/seo-rules`.
+- `**AuditCache**` — in-memory `Map<TabId, { url, result, at }>`. `get` / `set` / `invalidate`. TTL 30s; invalidated on `tabs.onUpdated`.
+- `**AuditBus**` — holds a `SubscriptionRef<AuditState>` (or `PubSub<AuditState>` + `Ref`) per `TabId`. Panel subscribes; background publishes.
 
 Compose the app layer with `Layer.provideMerge` so dependency order is explicit (`Extractor` needs `BrowserApi`, etc.):
 
@@ -317,12 +318,12 @@ Schemas live next to the derivations. `PageDataSchema` in particular doubles as 
 
 Bite-sized, each independently verifiable.
 
-1. **Add `effect` + `@effect/vitest` + `vitest`.** Add `"effect": "catalog:"` to both packages. Add vitest as a devDep, add `vitest.config.ts`, wire `"test": "vitest run"`. Run `bun install`. Typecheck.
-2. **Define branded primitives, schemas, and errors in `seo-rules`.** `TabId`, `PageUrl`, `RuleId`, `Score`. `PageData`, `AuditFinding` (gains `id/title/category/context/grep`), `AuditResult` (gains `counts/categoryScores`) as `Schema.Class`. `AuditState` variants as `Schema.TaggedClass` + `Schema.Union`. Tagged errors module.
-3. **Port existing rules to the new shape.** `titleRule`, `metaDescriptionRule`, `headingsRule` — wrap outputs with category + context. Verify with `it.effect` table-driven tests in `tests/rules.test.ts`.
-4. **Add missing rules** for categories the UI already shows: headings skip-level, images missing-alt, structured-data valid-schema / unknown-type, indexing canonical + robots. Keep them pure and weight-balanced with the existing engine.
+1. **✅ Add** `effect` **+** `@effect/vitest` **+** `vitest`**.** Add `"effect": "catalog:"` to both packages. Add vitest as a devDep, add `vitest.config.ts`, wire `"test": "vitest run"`. Run `bun install`. Typecheck.
+2. **✅ Define branded primitives, schemas, and errors in** `seo-rules`**.** `TabId`, `PageUrl`, `RuleId`, `Score`. `PageData`, `AuditFinding` (gains `id/title/category/context/grep`), `AuditResult` (gains `counts/categoryScores`) as `Schema.Class`. `AuditState` variants as `Schema.TaggedClass` + `Schema.Union`. Tagged errors module.
+3. **✅ Port existing rules to the new shape.** `titleRule`, `metaDescriptionRule`, `headingsRule` — wrap outputs with category + context. Verify with `it.effect` table-driven tests in `tests/rules.test.ts`.
+4. **✅ Add missing rules** for categories the UI already shows: headings skip-level, images missing-alt, structured-data valid-schema / unknown-type, indexing canonical + robots. Keep them pure and weight-balanced with the existing engine.
 5. **Add view-model derivations** (`packages/seo-rules/src/view/`). Export from package index.
-6. **Create service classes in `apps/extension/src/lib/services/`**: `BrowserApi`, `Extractor`, `Auditor`, `AuditCache`, `AuditBus`. Each is a `Context.Tag` class with `static readonly layer` and `static readonly testLayer`. Service methods use `Effect.fn("Service.method")(...)` for traced spans.
+6. **Create service classes in `apps/extension/src/lib/services/*`*: `BrowserApi`, `Extractor`, `Auditor`, `AuditCache`, `AuditBus`. Each is a `Context.Tag` class with `static readonly layer` and `static readonly testLayer`. Service methods use `Effect.fn("Service.method")(...)` for traced spans.
 7. **Rewrite `entrypoints/background.ts`** to build a `ManagedRuntime`, start the audit queue fiber, subscribe to tab/window/webNavigation events, and handle `runtime.onConnect` for the side panel port.
 8. **Keep `entrypoints/content.ts`** unchanged except for validating its output against `PageData` schema pre-send (cheap safety net).
 9. **Add `manifest.permissions`** `"tabs"` and `"webNavigation"` in `wxt.config.ts`. `activeTab` is not enough for background-initiated cross-tab messaging.
@@ -369,12 +370,14 @@ export default defineConfig({ test: { include: ["tests/**/*.test.ts"] } })
 Update `package.json` scripts to `"test": "vitest run"`. Import `describe`, `it`, `expect` from `@effect/vitest` (not `vitest`).
 
 ### Unit
+
 - **Rules** (`packages/seo-rules`): pure functions, table-driven. `it.effect` + `Effect.provide` where needed.
 - **View-model derivations**: same.
-- **`PageData` schema**: `Schema.decodeUnknown` happy-path + malformed inputs.
+- `**PageData` schema**: `Schema.decodeUnknown` happy-path + malformed inputs.
 - **Services**: each Tag ships a `static readonly testLayer`. Tests compose `serviceUnderTest.layer.pipe(Layer.provideMerge(Dep.testLayer), ...)` and call `Effect.provide(testLayer)` at the end of the test pipeline. Debounce tests use `TestClock.adjust` — this is why we need `@effect/vitest` specifically.
 
 ### Integration (manual, documented)
+
 Drive through the existing `docs/local-testing.md` flow and verify:
 
 1. Open side panel on a well-formed article — `Ready`, score > 0, findings populated.
@@ -387,6 +390,7 @@ Drive through the existing `docs/local-testing.md` flow and verify:
 8. Copy full report → paste into a text editor, confirm Markdown is clean.
 
 ### Performance budget
+
 - Extract + audit round-trip < 150ms on a typical page (headings tree up to ~200 nodes). Debounce gives us room but shouldn't be load-bearing.
 - Side-panel re-render on tab switch: single React state update; no list virtualization needed until findings > 100.
 
@@ -405,6 +409,7 @@ Drive through the existing `docs/local-testing.md` flow and verify:
 ## 9. File Touch List
 
 **New**
+
 - `packages/seo-rules/src/errors.ts`
 - `packages/seo-rules/src/schema.ts`
 - `packages/seo-rules/src/view/{meta,social,indexing,jsonld,breadcrumbs,images}.ts`
@@ -415,6 +420,7 @@ Drive through the existing `docs/local-testing.md` flow and verify:
 - `apps/extension/src/entrypoints/sidepanel/components/states/{loading,restricted,error}.tsx`
 
 **Modified**
+
 - `packages/seo-rules/src/types.ts`, `engine.ts`, `rules/*.ts`, `index.ts`
 - `apps/extension/src/entrypoints/background.ts` — full rewrite.
 - `apps/extension/src/entrypoints/content.ts` — add schema validation pre-send.
@@ -424,4 +430,6 @@ Drive through the existing `docs/local-testing.md` flow and verify:
 - `apps/extension/package.json`, `packages/seo-rules/package.json` — add `effect`.
 
 **Deleted (at the end)**
+
 - `apps/extension/src/entrypoints/sidepanel/data/placeholder.ts`
+
