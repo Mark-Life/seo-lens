@@ -323,7 +323,7 @@ Bite-sized, each independently verifiable.
 3. **✅ Port existing rules to the new shape.** `titleRule`, `metaDescriptionRule`, `headingsRule` — wrap outputs with category + context. Verify with `it.effect` table-driven tests in `tests/rules.test.ts`.
 4. **✅ Add missing rules** for categories the UI already shows: headings skip-level, images missing-alt, structured-data valid-schema / unknown-type, indexing canonical + robots. Keep them pure and weight-balanced with the existing engine.
 5. **✅ Add view-model derivations** (`packages/seo-rules/src/view/`). Export from package index.
-6. **Create service classes in `apps/extension/src/lib/services/*`*: `BrowserApi`, `Extractor`, `Auditor`, `AuditCache`, `AuditBus`. Each is a `Context.Tag` class with `static readonly layer` and `static readonly testLayer`. Service methods use `Effect.fn("Service.method")(...)` for traced spans.
+6. ✅ **Create service classes in `apps/extension/src/lib/services/*`*: `BrowserApi`, `Extractor`, `Auditor`, `AuditCache`, `AuditBus`. Each is a `Context.Tag` class with `static readonly layer` and `static readonly testLayer`. Service methods use `Effect.fn("Service.method")(...)` for traced spans.
 7. **Rewrite `entrypoints/background.ts`** to build a `ManagedRuntime`, start the audit queue fiber, subscribe to tab/window/webNavigation events, and handle `runtime.onConnect` for the side panel port.
 8. **Keep `entrypoints/content.ts`** unchanged except for validating its output against `PageData` schema pre-send (cheap safety net).
 9. **Add `manifest.permissions`** `"tabs"` and `"webNavigation"` in `wxt.config.ts`. `activeTab` is not enough for background-initiated cross-tab messaging.

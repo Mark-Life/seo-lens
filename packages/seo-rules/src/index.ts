@@ -1,4 +1,35 @@
+import { headingsRule } from "./rules/headings";
+import { headingsSkipRule } from "./rules/headings-skip";
+import { imagesAltRule } from "./rules/images-alt";
+import { canonicalRule, robotsRule } from "./rules/indexing";
+import { metaDescriptionRule } from "./rules/meta-description";
+import {
+  structuredUnknownTypeRule,
+  structuredValidRule,
+} from "./rules/structured";
+import { titleRule } from "./rules/title";
+import type { AuditRule } from "./types";
+
+export const defaultRules: readonly AuditRule[] = [
+  titleRule,
+  metaDescriptionRule,
+  headingsRule,
+  headingsSkipRule,
+  imagesAltRule,
+  canonicalRule,
+  robotsRule,
+  structuredValidRule,
+  structuredUnknownTypeRule,
+];
+
 export { runAudit } from "./engine";
+export {
+  AuditFailed,
+  ExtractionFailed,
+  NoActiveTab,
+  RestrictedUrl,
+  TabNotReady,
+} from "./errors";
 export { headingsRule } from "./rules/headings";
 export { headingsSkipRule } from "./rules/headings-skip";
 export { imagesAltRule } from "./rules/images-alt";
