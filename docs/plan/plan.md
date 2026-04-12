@@ -331,7 +331,8 @@ Bite-sized, each independently verifiable.
 11. **✅ Rewrite** `sidepanel/app.tsx` to consume `AuditState`: render `<Loading/>`, `<Restricted/>`, `<Error/>`, or the three tabs. Move tab contents into a `Ready` wrapper that passes `page` + `result` down.
 12. **✅ Rewrite** `Header`**,** `OverviewTab`**,** `FindingsTab`**,** `InspectTab` to accept real data as props. Delete `data/placeholder.ts` when the last reference goes. Preserve the existing styling verbatim — this is a data-wiring change, not a redesign.
 13. **✅ Switch to scoped live-DOM audits — Option B (§9).** Fetched-HTML misses RSC/CSR-rendered content (confirmed on Next.js App Router blog: zero headings in raw response, headings live in flight payload). Live DOM is the right source; mount-merging is solved by scoping to the active route subtree, not by avoiding the DOM.
-14. **Manual test matrix** — see §7.
+14. **✅ Manual test matrix** — see §7.
+15. **✅ JSON-LD improvements** — vocab detection, rich-results validation, and suggestions. See [json-ld-improvements.md](./json-ld-improvements.md). Tracked in PR [#1](https://github.com/Mark-Life/seo-lens/pull/1).
 
 ---
 
