@@ -34,3 +34,21 @@ export {
   TabId,
 } from "./schema";
 export type { AuditRule } from "./types";
+export {
+  type Breadcrumb,
+  deriveBreadcrumbs,
+  deriveImageGallery,
+  deriveIndexingView,
+  deriveJsonLdBlocks,
+  deriveMetaView,
+  deriveSocialView,
+  type ImageView,
+  type IndexingRow,
+  type IndexingStatus,
+  type JsonLdBlock,
+  type JsonLdField,
+  type MetaView,
+  type OgView,
+  type SocialView,
+  type TwitterView,
+} from "./view";
