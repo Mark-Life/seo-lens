@@ -1,5 +1,11 @@
+import {
+  type RichResultsReport,
+  validateBlock,
+} from "../rich-results/validate";
 import type { PageData } from "../schema";
 import { isClass, propertyValidFor, suggestClass } from "../vocab/query";
+
+export type { RichResultsReport } from "../rich-results/validate";
 
 export interface NodeValidity {
   readonly note?: string;
@@ -38,23 +44,6 @@ export type JsonLdNode =
   | JsonLdObjectNode
   | JsonLdArrayNode
   | JsonLdPrimitiveNode;
-
-/**
- * Placeholder for Google Rich Results validation output.
- * Wired by Step 7/8 of the JSON-LD improvements plan.
- */
-export interface RichResultsReport {
-  readonly docUrl: string;
-  readonly recommendedErrors: readonly {
-    readonly path: string;
-    readonly message: string;
-  }[];
-  readonly requiredErrors: readonly {
-    readonly path: string;
-    readonly message: string;
-  }[];
-  readonly spec: string;
-}
 
 export interface JsonLdBlock {
   readonly id: string;
@@ -196,7 +185,7 @@ export const deriveJsonLdBlocks = (page: PageData): JsonLdBlock[] =>
       type: resolvedType,
       typeValid,
       typeSuggestion: typeValid ? null : suggestClass(resolvedType),
-      richResults: null,
+      richResults: validateBlock(raw, resolvedType),
       raw,
     };
   });

@@ -425,7 +425,7 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 
 **Done when:** tests pass; `inspect-tab.tsx` still compiles (may render degraded temporarily until Step 6).
 
-### Step 6 — Tree UI component
+### ✅ Step 6 — Tree UI component
 
 **Goal:** render recursive tree, fully expanded, with per-node copy.
 **Files:**
@@ -443,7 +443,7 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 
 **Done when:** tree renders recursively; nested objects visible without opening raw; copy-per-node works.
 
-### Step 7 — Rich Results registry + validator scaffolding
+### ✅ Step 7 — Rich Results registry + validator scaffolding
 
 **Goal:** plumbing for Effect Schema specs, no specs yet.
 **Files:**
@@ -460,7 +460,7 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 
 **Done when:** compiles; calling `validateBlock` on any fixture returns `null`.
 
-### Step 8 — First spec: Article + wire into view model
+### ✅ Step 8 — First spec: Article + wire into view model
 
 **Goal:** prove the pipeline end-to-end with one spec.
 **Files:**

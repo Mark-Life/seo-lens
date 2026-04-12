@@ -12,6 +12,7 @@ import { ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
 import { CopyButton } from "./copy-button";
+import { JsonLdTree } from "./jsonld-tree";
 import { SectionLabel } from "./section-label";
 
 const indexingTone: Record<IndexingStatus, string> = {
@@ -317,7 +318,7 @@ export function InspectTab({ page }: InspectTabProps) {
 
       <div className="rule-hair" />
 
-      {/* JSON-LD — VALIDATED BLOCKS + RAW */}
+      {/* JSON-LD — VALIDATED BLOCKS */}
       <section>
         <div className="flex items-center justify-between">
           <SectionLabel
@@ -328,64 +329,16 @@ export function InspectTab({ page }: InspectTabProps) {
           <CopyButton label="Copy JSON-LD" payload={jsonldRaw} size="sm" />
         </div>
 
-        {/* Validated block list */}
-        <ul className="mt-3 flex flex-col gap-2">
-          {refreshing &&
-            [0, 1].map((i) => (
+        {refreshing && (
+          <ul className="mt-3 flex flex-col gap-2">
+            {[0, 1].map((i) => (
               <li key={`skeleton-jld-${i}`}>
                 <DataSlot className="h-16 w-full rounded-md" />
               </li>
             ))}
-          {!refreshing &&
-            jsonldBlocks.map((block) => (
-              <li
-                className={`overflow-hidden rounded-md border bg-card ${
-                  block.typeValid
-                    ? "border-border"
-                    : "border-destructive/50 ring-1 ring-destructive/20"
-                }`}
-                key={block.id}
-              >
-                <div className="flex items-center gap-2 border-border/60 border-b px-3 py-2">
-                  <span
-                    className={`font-mono text-[9px] uppercase tracking-wider ${
-                      block.typeValid ? "text-primary" : "text-destructive"
-                    }`}
-                  >
-                    {block.typeValid ? "schema.org ✓" : "schema.org ✕"}
-                  </span>
-                  <span
-                    className={`font-display text-[12px] ${
-                      block.typeValid ? "text-foreground" : "text-destructive"
-                    }`}
-                  >
-                    {block.type}
-                  </span>
-                  {block.typeSuggestion && (
-                    <span className="ml-auto font-mono text-[9px] text-destructive/90 italic">
-                      Did you mean {block.typeSuggestion}?
-                    </span>
-                  )}
-                </div>
-              </li>
-            ))}
-        </ul>
-
-        {/* Raw source */}
-        {jsonldBlocks.length > 0 && (
-          <details className="group mt-3">
-            <summary className="flex cursor-pointer items-center gap-1.5 font-mono text-[9px] text-muted-foreground uppercase tracking-widest hover:text-foreground">
-              <ChevronRight
-                aria-hidden
-                className="size-3 transition-transform group-open:rotate-90"
-              />
-              View raw source
-            </summary>
-            <pre className="mt-2 max-h-72 overflow-auto rounded-md border border-border bg-foreground/5 p-3 font-mono text-[10.5px] text-foreground leading-relaxed">
-              <code>{jsonldRaw}</code>
-            </pre>
-          </details>
+          </ul>
         )}
+        {!refreshing && <JsonLdTree blocks={jsonldBlocks} />}
       </section>
 
       <div className="rule-hair" />
