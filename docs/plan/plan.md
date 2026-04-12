@@ -330,8 +330,21 @@ Bite-sized, each independently verifiable.
 10. **✅ Build** `PanelClient` **service +** `useRuntime` **/** `useAuditState` **hooks** in the side panel.
 11. **✅ Rewrite** `sidepanel/app.tsx` to consume `AuditState`: render `<Loading/>`, `<Restricted/>`, `<Error/>`, or the three tabs. Move tab contents into a `Ready` wrapper that passes `page` + `result` down.
 12. **✅ Rewrite** `Header`**,** `OverviewTab`**,** `FindingsTab`**,** `InspectTab` to accept real data as props. Delete `data/placeholder.ts` when the last reference goes. Preserve the existing styling verbatim — this is a data-wiring change, not a redesign.
-13. **Copy/export buttons**: wire the Markdown and JSON export buttons in `OverviewTab` (currently no-ops). Markdown uses a `reportToMarkdown(result)` helper; JSON is `JSON.stringify(result, null, 2)`.
-14. **Manual test matrix** — see §7.
+13. **Switch to fetched-HTML audits — Option A (§9).** Motivated by SPA mount-merging confirmed on Next.js App Router. Sub-steps:
+    1. **Add platform deps.** `@effect/platform` + `@effect/platform-browser` to the workspace catalog and to `apps/extension/package.json`. `bun install`. Typecheck.
+    2. **Add `host_permissions: ["<all_urls>"]`** in `wxt.config.ts`. Required for background `fetch` to arbitrary origins.
+    3. **Add `FetchFailed` tagged error** in `packages/seo-rules/src/errors.ts` with fields `{ url: PageUrl, status?: number, cause: Schema.Defect }`. Export from package index.
+    4. **Lift extraction into `packages/seo-rules/src/extract.ts`.** Move the body of the current `extractPageData` into `extractFromDocument(doc: Document, url: PageUrl): unknown`. Pure, no globals. Export from package index.
+    5. **New `Fetcher` service** (`apps/extension/src/lib/services/fetcher.ts`). `Context.Tag` class. Layer wraps `FetchHttpClient.layer` from `@effect/platform-browser`. Method `fetch(url: PageUrl): Effect<string, FetchFailed>` — sets `User-Agent: SEO-Lens/1.0 (+crawler-view)`, `credentials: "omit"`, 10s `Effect.timeoutFail`, maps non-2xx to `FetchFailed { status }`. Ship a `testLayer` backed by an in-memory `Map<PageUrl, string>`.
+    6. **New `HtmlExtractor` service** (`apps/extension/src/lib/services/html-extractor.ts`). Method `extract(url: PageUrl, html: string): Effect<PageData, ExtractionFailed>`. Parses with `new DOMParser().parseFromString(html, "text/html")`, calls `extractFromDocument`, decodes through `PageData` schema, attaches the request URL (not the parsed `<base>` URL).
+    7. **Rewrite `Extractor`** to compose `Fetcher` + `HtmlExtractor`. New flow: `BrowserApi.getTab` → `ensureAuditable` → `Fetcher.fetch(tab.url)` → `HtmlExtractor.extract(url, html)`. Drop the `sendMessage(EXTRACT_PAGE_DATA)` path. Update `Extractor.testLayer` accordingly (now stubs `Fetcher` + `HtmlExtractor` instead of message responses).
+    8. **Wire into `appLayer`** in `services/index.ts`. `Fetcher.layer` provides `HttpClient` via `FetchHttpClient.layer`; `HtmlExtractor.layer` has no deps; `Extractor.layer` now depends on `Fetcher` + `HtmlExtractor` instead of `BrowserApi`'s message channel. Update `Layer.provideMerge` order.
+    9. **Extend `auditTab` error handling.** Add `FetchFailed` to the `Effect.catchTags` block in `entrypoints/background.ts` — publish `AuditError` with a message that distinguishes network failure (no response), HTTP error (include status code), and parse failure.
+    10. **Delete the live-DOM content script.** Remove `apps/extension/src/entrypoints/content.ts` (and its `MutationObserver` quiet-window helper added during the previous fix attempt). Remove any WXT entrypoint references.
+    11. **Tests.** `HtmlExtractor`: table-driven `it.effect` over fixture HTML strings — one SSR Next.js page, one CSR shell, one with inline JSON-LD, one with multiple `<base>` shenanigans. `Fetcher`: stub `HttpClient` via `@effect/platform`'s test utilities; assert timeout, non-2xx, and happy paths.
+    12. **Manual repro verification.** Re-navigate the user's Next.js site between blog and home. Side panel should show only the current page's headings. Spot-check `chrome://extensions` still renders `<Restricted/>` (the URL check in `BrowserApi.ensureAuditable` runs before the fetch).
+14. **Copy/export buttons**: wire the Markdown and JSON export buttons in `OverviewTab` (currently no-ops). Markdown uses a `reportToMarkdown(result)` helper; JSON is `JSON.stringify(result, null, 2)`.
+15. **Manual test matrix** — see §7.
 
 ---
 
@@ -406,15 +419,71 @@ Drive through the existing `docs/local-testing.md` flow and verify:
 
 ---
 
-## 9. File Touch List
+## 9. SPA Mount-Merging — Switch to Fetched-HTML Audits
+
+### The issue
+
+Live-DOM extraction is the wrong source of truth for an SEO audit. On SPA frameworks (notably Next.js App Router with parallel routes, view transitions, or layouts that keep prior routes mounted), the active document can legitimately contain nodes from every route the user has visited. Confirmed in the wild: a single page returned 46 headings spanning ~5 distinct routes (`H1 Bots & Automation Solutions`, `H1 Services`, `H1 Launch Your Business with AI`, …) — all present in `document.querySelectorAll('h1...h6')` at steady state, not transitionally.
+
+A `MutationObserver` quiet-window does not help: the merged DOM *is* the steady state. Filtering by visibility does not help either: the inactive routes are not hidden via CSS.
+
+The deeper realisation: an SEO audit should answer **"what does a crawler see when it fetches this URL?"**, not "what is currently in the user's DOM." Those are different questions and we have been answering the wrong one.
+
+### Options considered
+
+**Option A — Fetch the URL from the background and audit the response HTML.** Use `@effect/platform` + `@effect/platform-browser` `FetchHttpClient`, parse with `DOMParser`, run extraction over the parsed document.
+
+- Pros: matches crawler view (the correct SEO question); immune to SPA mount-merging, view transitions, hydration drift, dev overlays; no timing races (single static response); unblocks US-4 (agent API can audit a URL with no tab); Effect platform gives `Schema` decoding, retries, timeouts, `AbortController` wiring for free.
+- Cons: misses client-rendered content (pure-CSR SPAs return an empty shell); audits run with the user's cookies unless we send `credentials: "omit"` (which then breaks on private pages); needs `host_permissions: ["<all_urls>"]` (scarier install banner); two HTTP requests per audit; potential drift between "what I see" and "what I audit."
+
+**Option B — Filter the live DOM to visible / `<main>` content.** Scope `querySelectorAll` to `<main>` if present, exclude `[hidden]`, `aria-hidden`, `display:none`, `visibility:hidden`.
+
+- Pros: tiny diff, stays in current architecture, no new permissions, often "good enough" on well-built sites that hide inactive routes.
+- Cons: pure heuristic; does not help when inactive routes are *not* hidden (the actual failure case); wrongly excludes legitimate offscreen content (carousels, accordions); does not answer the SEO question — Google sees CSS-hidden content too.
+
+**Option C — Hybrid: Option A with live-DOM fallback.** Default to fetched-HTML audit; if the response has no meaningful content (CSR shell), fall back to live-DOM extraction with a banner explaining the switch.
+
+- Pros: correct for SSR sites, still works for SPAs, single coherent UX with the discrepancy made explicit.
+- Cons: most code; two extraction paths to maintain; "is this CSR" is itself a heuristic.
+
+### Decision
+
+Go with **Option A** now. Option C (A+B hybrid) is the eventual destination once the fetched-HTML path is solid and we have a real signal for "this is a CSR shell, fall back."
+
+### Implementation steps (Option A)
+
+1. **Add platform deps.** `@effect/platform` + `@effect/platform-browser` to the extension via the workspace catalog. Bump catalog if needed.
+2. **Add `host_permissions: ["<all_urls>"]`** in `wxt.config.ts`. Required for the background to `fetch` arbitrary origins.
+3. **Refactor extraction to be document-agnostic.** Today `extractPageData` in `content.ts` reads the global `document`. Lift the logic into `packages/seo-rules/src/extract.ts` as `extractFromDocument(doc: Document): unknown` (pure, takes a `Document`). The content script and the new HtmlExtractor service both call it.
+4. **New `Fetcher` service** (`apps/extension/src/lib/services/fetcher.ts`). `Context.Tag` class, layer built on `FetchHttpClient.layer`. Method `fetch(url: PageUrl): Effect<string, FetchFailed>`. 10s timeout via `Effect.timeoutFail`. Sets `User-Agent: SEO-Lens/1.0 (+crawler-view)` and `credentials: "omit"` to match an unauthenticated crawler. New tagged error `FetchFailed { url, status?, cause }` in `seo-rules/src/errors.ts`.
+5. **New `HtmlExtractor` service** (`apps/extension/src/lib/services/html-extractor.ts`). Method `extract(url: PageUrl, html: string): Effect<PageData, ExtractionFailed>`. Parses with `new DOMParser().parseFromString(html, "text/html")`, calls `extractFromDocument`, decodes through `PageData` schema, attaches `url` (from the request, not from the parsed doc — avoids `<base>` shenanigans).
+6. **Rewrite `Extractor`** to compose `Fetcher` + `HtmlExtractor`:
+   - `extract(tabId)` resolves the tab's URL via `BrowserApi`, runs `ensureAuditable`, then `Fetcher.fetch(url)` → `HtmlExtractor.extract(url, html)`.
+   - Drop the `browser.tabs.sendMessage(EXTRACT_PAGE_DATA)` path. The content script and its message listener can be deleted in a follow-up step (kept around briefly for diffing during rollout).
+7. **Wire `Fetcher` + `HtmlExtractor` into `appLayer`** in `services/index.ts`, with `FetchHttpClient.layer` provided to `Fetcher`.
+8. **Update error handling in `auditTab`.** Add `FetchFailed` to the `Effect.catchTags` block — publish `AuditError` with a message distinguishing network failure (no response), HTTP error (status code), and parse failure.
+9. **Delete the live-DOM content script path.** Remove `apps/extension/src/entrypoints/content.ts` and the `EXTRACT_PAGE_DATA` listener wiring. Drop the `MutationObserver` quiet-window helper added during the previous fix attempt. Update `wxt.config.ts` if it lists the content script entrypoint explicitly.
+10. **Tests.** `HtmlExtractor`: table-driven `it.effect` over fixture HTML strings (one SSR Next.js page, one CSR shell, one with inline JSON-LD). `Fetcher`: stub `HttpClient` via `@effect/platform`'s test utilities; assert timeout, non-2xx, and happy paths.
+11. **Manual verification.** Re-run the original repro: navigate the user's Next.js site between blog and home. Side panel should show only the current page's headings. Then open `chrome://extensions` — should still render `<Restricted/>` (the `BrowserApi.ensureAuditable` check still runs against the tab URL, before the fetch).
+
+### Deferred to Option C (future)
+
+- CSR-shell detection heuristic and live-DOM fallback path.
+- "Audit this fetched URL" vs. "Inspect the live DOM" as two distinct user intents in the UI.
+- Surfacing the discrepancy when the fetched HTML and the live DOM disagree.
+
+---
+
+## 10. File Touch List
 
 **New**
 
 - `packages/seo-rules/src/errors.ts`
 - `packages/seo-rules/src/schema.ts`
+- `packages/seo-rules/src/extract.ts` (document-agnostic extraction — §9)
 - `packages/seo-rules/src/view/{meta,social,indexing,jsonld,breadcrumbs,images}.ts`
 - `packages/seo-rules/src/rules/{headings-skip,images-alt,structured,indexing,social}.ts`
-- `apps/extension/src/lib/services/{browser-api,extractor,auditor,cache,bus,panel-client}.ts`
+- `apps/extension/src/lib/services/{browser-api,extractor,auditor,cache,bus,panel-client,fetcher,html-extractor}.ts`
 - `apps/extension/src/lib/runtime.ts` (ManagedRuntime + React context)
 - `apps/extension/src/entrypoints/sidepanel/hooks/use-audit-state.ts`
 - `apps/extension/src/entrypoints/sidepanel/components/states/{loading,restricted,error}.tsx`
@@ -423,13 +492,14 @@ Drive through the existing `docs/local-testing.md` flow and verify:
 
 - `packages/seo-rules/src/types.ts`, `engine.ts`, `rules/*.ts`, `index.ts`
 - `apps/extension/src/entrypoints/background.ts` — full rewrite.
-- `apps/extension/src/entrypoints/content.ts` — add schema validation pre-send.
+- `apps/extension/src/lib/services/extractor.ts` — rewritten to compose `Fetcher` + `HtmlExtractor` (§9).
 - `apps/extension/src/entrypoints/sidepanel/app.tsx` — consume `AuditState`.
 - `apps/extension/src/entrypoints/sidepanel/components/{header,overview-tab,findings-tab,inspect-tab}.tsx` — props instead of placeholder import.
-- `apps/extension/wxt.config.ts` — add `tabs`, `webNavigation` permissions.
-- `apps/extension/package.json`, `packages/seo-rules/package.json` — add `effect`.
+- `apps/extension/wxt.config.ts` — add `tabs`, `webNavigation` permissions, plus `host_permissions: ["<all_urls>"]` (§9).
+- `apps/extension/package.json`, `packages/seo-rules/package.json` — add `effect`, `@effect/platform`, `@effect/platform-browser`.
 
 **Deleted (at the end)**
 
 - `apps/extension/src/entrypoints/sidepanel/data/placeholder.ts`
+- `apps/extension/src/entrypoints/content.ts` — live-DOM extraction superseded by fetched-HTML audit (§9).
 
