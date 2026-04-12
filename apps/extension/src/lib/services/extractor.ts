@@ -1,24 +1,19 @@
 import {
   ExtractionFailed,
-  type FetchFailed,
-  type PageData,
-  PageUrl,
+  PageData,
   type RestrictedUrl,
   type TabId,
   type TabNotReady,
 } from "@workspace/seo-rules";
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Schema } from "effect";
 import { BrowserApi } from "./browser-api";
-import { Fetcher } from "./fetcher";
-import { HtmlExtractor } from "./html-extractor";
+
+const decodePageData = Schema.decodeUnknown(PageData);
 
 export interface ExtractorShape {
   readonly extract: (
     tabId: TabId
-  ) => Effect.Effect<
-    PageData,
-    ExtractionFailed | FetchFailed | RestrictedUrl | TabNotReady
-  >;
+  ) => Effect.Effect<PageData, ExtractionFailed | RestrictedUrl | TabNotReady>;
 }
 
 export class Extractor extends Context.Tag("Extractor")<
@@ -29,8 +24,6 @@ export class Extractor extends Context.Tag("Extractor")<
     Extractor,
     Effect.gen(function* () {
       const api = yield* BrowserApi;
-      const fetcher = yield* Fetcher;
-      const htmlExtractor = yield* HtmlExtractor;
 
       const extract = Effect.fn("Extractor.extract")(function* (tabId: TabId) {
         const tab = yield* api
@@ -40,10 +33,19 @@ export class Extractor extends Context.Tag("Extractor")<
               Effect.fail(new ExtractionFailed({ tabId, cause }))
             )
           );
-        const auditable = yield* api.ensureAuditable(tab);
-        const url = PageUrl.make(auditable.url);
-        const html = yield* fetcher.fetch(url);
-        return yield* htmlExtractor.extract(tabId, url, html);
+        yield* api.ensureAuditable(tab);
+        const raw = yield* api
+          .sendMessage<unknown>(tabId, { type: "EXTRACT_PAGE_DATA" })
+          .pipe(
+            Effect.catchTag("NoActiveTab", (cause) =>
+              Effect.fail(new ExtractionFailed({ tabId, cause }))
+            )
+          );
+        return yield* decodePageData(raw).pipe(
+          Effect.catchTag("ParseError", (cause) =>
+            Effect.fail(new ExtractionFailed({ tabId, cause }))
+          )
+        );
       });
 
       return Extractor.of({ extract });

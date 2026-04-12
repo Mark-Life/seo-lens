@@ -51,6 +51,21 @@ export class LinkData extends Schema.Class<LinkData>("LinkData")({
   text: Schema.String,
 }) {}
 
+export const AuditRootSource = Schema.Literal(
+  "main",
+  "role-main",
+  "largest-subtree",
+  "body"
+);
+export type AuditRootSource = typeof AuditRootSource.Type;
+
+export class AuditRootInfo extends Schema.Class<AuditRootInfo>("AuditRootInfo")(
+  {
+    selector: Schema.String,
+    source: AuditRootSource,
+  }
+) {}
+
 // ─── PageData ──────────────────────────────────────────────────────────
 
 export class PageData extends Schema.Class<PageData>("PageData")({
@@ -65,6 +80,7 @@ export class PageData extends Schema.Class<PageData>("PageData")({
   openGraph: Schema.Record({ key: Schema.String, value: Schema.String }),
   twitterCard: Schema.Record({ key: Schema.String, value: Schema.String }),
   jsonLd: Schema.Array(Schema.Unknown),
+  auditRoot: AuditRootInfo,
 }) {}
 
 // ─── AuditFinding ──────────────────────────────────────────────────────

@@ -14,14 +14,91 @@ const toAbsolute = (href: string, base: string): string => {
   }
 };
 
-const extractHeadings = (doc: Document) =>
-  Array.from(doc.querySelectorAll("h1, h2, h3, h4, h5, h6")).map((el) => ({
+export type AuditRootSource = "main" | "role-main" | "largest-subtree" | "body";
+
+export interface AuditRoot {
+  element: Element;
+  source: AuditRootSource;
+}
+
+const DISPLAY_NONE_RE = /display\s*:\s*none/i;
+const VISIBILITY_HIDDEN_RE = /visibility\s*:\s*hidden/i;
+const WHITESPACE_RE = /\s+/;
+
+const isHidden = (el: Element): boolean => {
+  if (el.hasAttribute("hidden")) {
+    return true;
+  }
+  if (el.getAttribute("aria-hidden") === "true") {
+    return true;
+  }
+  const style = el.getAttribute("style") ?? "";
+  if (DISPLAY_NONE_RE.test(style)) {
+    return true;
+  }
+  if (VISIBILITY_HIDDEN_RE.test(style)) {
+    return true;
+  }
+  return false;
+};
+
+const visibleTextLength = (el: Element): number => {
+  if (isHidden(el)) {
+    return 0;
+  }
+  return (el.textContent ?? "").trim().length;
+};
+
+const pickSingleVisible = (els: ArrayLike<Element>): Element | null => {
+  const visible = Array.from(els).filter((el) => !isHidden(el));
+  return visible.length === 1 ? (visible[0] ?? null) : null;
+};
+
+/**
+ * Choose the subtree to audit. Mount-merging SPAs (parallel routes, view
+ * transitions) leave prior route DOM in the tree; auditing the whole document
+ * yields stale headings/images/links. This heuristic scopes extraction to the
+ * active route.
+ */
+export const findAuditRoot = (doc: Document): AuditRoot => {
+  const main = pickSingleVisible(doc.querySelectorAll("main"));
+  if (main && visibleTextLength(main) > 0) {
+    return { element: main, source: "main" };
+  }
+
+  const roleMain = pickSingleVisible(doc.querySelectorAll('[role="main"]'));
+  if (roleMain && visibleTextLength(roleMain) > 0) {
+    return { element: roleMain, source: "role-main" };
+  }
+
+  const body = doc.body;
+  if (!body) {
+    return { element: doc.documentElement, source: "body" };
+  }
+
+  let best: Element | null = null;
+  let bestLen = 0;
+  for (const child of Array.from(body.children)) {
+    const len = visibleTextLength(child);
+    if (len > bestLen) {
+      bestLen = len;
+      best = child;
+    }
+  }
+  if (best) {
+    return { element: best, source: "largest-subtree" };
+  }
+  return { element: body, source: "body" };
+};
+
+const extractHeadings = (root: ParentNode) =>
+  Array.from(root.querySelectorAll("h1, h2, h3, h4, h5, h6")).map((el) => ({
     level: Number.parseInt(el.tagName.substring(1), 10),
     text: el.textContent?.trim() || "",
   }));
 
-const extractImages = (doc: Document, url: PageUrl) =>
-  Array.from(doc.querySelectorAll("img")).map((img) => {
+const extractImages = (root: ParentNode, url: PageUrl) =>
+  Array.from(root.querySelectorAll("img")).map((img) => {
     const rawSrc = img.getAttribute("src") || "";
     return {
       src: rawSrc ? toAbsolute(rawSrc, url) : "",
@@ -37,9 +114,9 @@ const hostOf = (url: string): string => {
   }
 };
 
-const extractLinks = (doc: Document, url: PageUrl) => {
+const extractLinks = (root: ParentNode, url: PageUrl) => {
   const host = hostOf(url);
-  return Array.from(doc.querySelectorAll("a[href]")).map((a) => {
+  return Array.from(root.querySelectorAll("a[href]")).map((a) => {
     const href = a.getAttribute("href") || "";
     const linkHost = hostOf(new URL(href, url).href);
     return {
@@ -98,6 +175,8 @@ const extractJsonLd = (doc: Document): unknown[] => {
 };
 
 export const extractFromDocument = (doc: Document, url: PageUrl): unknown => {
+  const auditRoot = findAuditRoot(doc);
+  const root = auditRoot.element;
   return {
     url,
     title: doc.title || "",
@@ -106,14 +185,28 @@ export const extractFromDocument = (doc: Document, url: PageUrl): unknown => {
       "",
     canonical:
       doc.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href || null,
-    headings: extractHeadings(doc),
-    images: extractImages(doc, url),
-    links: extractLinks(doc, url),
+    headings: extractHeadings(root),
+    images: extractImages(root, url),
+    links: extractLinks(root, url),
     openGraph: extractOpenGraph(doc, url),
     twitterCard: extractTwitterCard(doc, url),
     jsonLd: extractJsonLd(doc),
     robotsMeta:
       doc.querySelector<HTMLMetaElement>('meta[name="robots"]')?.content ||
       null,
+    auditRoot: {
+      selector: describeElement(root),
+      source: auditRoot.source,
+    },
   };
+};
+
+const describeElement = (el: Element): string => {
+  const tag = el.tagName.toLowerCase();
+  const id = el.id ? `#${el.id}` : "";
+  const cls = el.getAttribute("class");
+  const firstClass = cls ? `.${cls.trim().split(WHITESPACE_RE)[0]}` : "";
+  const role = el.getAttribute("role");
+  const roleAttr = role ? `[role="${role}"]` : "";
+  return `${tag}${id}${firstClass}${roleAttr}`;
 };

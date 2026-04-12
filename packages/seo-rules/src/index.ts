@@ -46,6 +46,8 @@ export {
   AuditError,
   AuditFinding,
   AuditResult,
+  AuditRootInfo,
+  AuditRootSource,
   AuditState,
   Category,
   CategoryScore,

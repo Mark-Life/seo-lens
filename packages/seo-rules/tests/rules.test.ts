@@ -10,6 +10,7 @@ import {
 } from "../src/rules/structured.js";
 import { titleRule } from "../src/rules/title.js";
 import {
+  AuditRootInfo,
   type FindingContext,
   HeadingData,
   ImageData,
@@ -42,6 +43,7 @@ const makePage = (
     openGraph: {},
     twitterCard: {},
     jsonLd: [],
+    auditRoot: AuditRootInfo.make({ selector: "body", source: "body" }),
     ...overrides,
   });
 

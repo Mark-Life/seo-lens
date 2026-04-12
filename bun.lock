@@ -102,6 +102,7 @@
       "devDependencies": {
         "@effect/vitest": "^0.29.0",
         "@workspace/typescript-config": "workspace:*",
+        "linkedom": "^0.18.12",
         "typescript": "^5.9.3",
         "vitest": "^3.2.0",
       },

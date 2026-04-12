@@ -7,6 +7,7 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
+    "test": "turbo test",
     "format": "bunx --bun ultracite fix",
     "check": "bunx --bun ultracite check",
     "fix": "bunx --bun ultracite fix",

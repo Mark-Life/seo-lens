@@ -330,7 +330,7 @@ Bite-sized, each independently verifiable.
 10. **✅ Build** `PanelClient` **service +** `useRuntime` **/** `useAuditState` **hooks** in the side panel.
 11. **✅ Rewrite** `sidepanel/app.tsx` to consume `AuditState`: render `<Loading/>`, `<Restricted/>`, `<Error/>`, or the three tabs. Move tab contents into a `Ready` wrapper that passes `page` + `result` down.
 12. **✅ Rewrite** `Header`**,** `OverviewTab`**,** `FindingsTab`**,** `InspectTab` to accept real data as props. Delete `data/placeholder.ts` when the last reference goes. Preserve the existing styling verbatim — this is a data-wiring change, not a redesign.
-13. **✅ Switch to fetched-HTML audits — Option A (§9).** Motivated by SPA mount-merging confirmed on Next.js App Router.
+13. **✅ Switch to scoped live-DOM audits — Option B (§9).** Fetched-HTML misses RSC/CSR-rendered content (confirmed on Next.js App Router blog: zero headings in raw response, headings live in flight payload). Live DOM is the right source; mount-merging is solved by scoping to the active route subtree, not by avoiding the DOM.
 14. **Manual test matrix** — see §7.
 
 ---
@@ -401,7 +401,6 @@ Drive through the existing `docs/local-testing.md` flow and verify:
 - MCP server / agent API (US-4) — design sketch only.
 - Firefox build — code is already WXT, should port cleanly but not tested this pass.
 - JSON-LD schema.org validation beyond `@type` recognition + a hand-picked field allowlist. Full schema.org validation is a later package.
-- Image size fetching for OG images (would require a `fetch` + permission).
 - Persistent cache across service-worker restarts (easy add later via `chrome.storage.session`).
 
 ---
