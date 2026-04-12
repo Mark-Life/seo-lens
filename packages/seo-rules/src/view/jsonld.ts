@@ -1,4 +1,5 @@
 import type { PageData } from "../schema";
+import { isClass, suggestClass } from "../vocab/query";
 
 export interface JsonLdField {
   key: string;
@@ -12,71 +13,6 @@ export interface JsonLdBlock {
   raw: unknown;
   type: string;
   valid: boolean;
-}
-
-const KNOWN_TYPES: ReadonlySet<string> = new Set([
-  "Article",
-  "BlogPosting",
-  "BreadcrumbList",
-  "Event",
-  "FAQPage",
-  "HowTo",
-  "ImageObject",
-  "ItemList",
-  "LocalBusiness",
-  "NewsArticle",
-  "Offer",
-  "Organization",
-  "Person",
-  "Product",
-  "Recipe",
-  "Review",
-  "SearchAction",
-  "SoftwareApplication",
-  "VideoObject",
-  "WebPage",
-  "WebSite",
-]);
-
-function levenshtein(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
-  if (m === 0) {
-    return n;
-  }
-  if (n === 0) {
-    return m;
-  }
-  let prev: number[] = new Array(n + 1);
-  let curr: number[] = new Array(n + 1);
-  for (let j = 0; j <= n; j++) {
-    prev[j] = j;
-  }
-  for (let i = 1; i <= m; i++) {
-    curr[0] = i;
-    for (let j = 1; j <= n; j++) {
-      const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
-      const up = (prev[j] ?? 0) + 1;
-      const left = (curr[j - 1] ?? 0) + 1;
-      const diag = (prev[j - 1] ?? 0) + cost;
-      curr[j] = Math.min(up, left, diag);
-    }
-    [prev, curr] = [curr, prev];
-  }
-  return prev[n] ?? 0;
-}
-
-function suggest(type: string): string | null {
-  let best: string | null = null;
-  let bestDist = Number.POSITIVE_INFINITY;
-  for (const known of KNOWN_TYPES) {
-    const d = levenshtein(type.toLowerCase(), known.toLowerCase());
-    if (d < bestDist) {
-      bestDist = d;
-      best = known;
-    }
-  }
-  return best !== null && bestDist > 0 && bestDist <= 2 ? best : null;
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -129,7 +65,7 @@ export function deriveJsonLdBlocks(page: PageData): JsonLdBlock[] {
     }
     const typeRaw = raw["@type"];
     const type = typeof typeRaw === "string" ? typeRaw : "unknown";
-    const valid = KNOWN_TYPES.has(type);
+    const valid = isClass(type);
     const block: JsonLdBlock = {
       fields: flattenFields(raw),
       id,
@@ -138,7 +74,7 @@ export function deriveJsonLdBlocks(page: PageData): JsonLdBlock[] {
       valid,
     };
     if (!valid) {
-      const hint = suggest(type);
+      const hint = suggestClass(type);
       if (hint !== null) {
         block.note = `Did you mean ${hint}?`;
       }

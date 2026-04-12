@@ -1,37 +1,6 @@
 import { AuditFinding, FindingContext, type PageData, RuleId } from "../schema";
 import type { AuditRule } from "../types";
-
-// Hand-picked allowlist of common schema.org @types we recognize.
-// Full schema.org validation is out of scope (see plan §8).
-const KNOWN_TYPES = new Set([
-  "Article",
-  "NewsArticle",
-  "BlogPosting",
-  "WebPage",
-  "WebSite",
-  "Organization",
-  "LocalBusiness",
-  "Person",
-  "Product",
-  "Offer",
-  "AggregateRating",
-  "Review",
-  "BreadcrumbList",
-  "ListItem",
-  "ImageObject",
-  "VideoObject",
-  "Event",
-  "Recipe",
-  "FAQPage",
-  "Question",
-  "Answer",
-  "HowTo",
-  "Course",
-  "JobPosting",
-  "SearchAction",
-  "CollectionPage",
-  "ItemList",
-]);
+import { isClass, suggestClass } from "../vocab/query";
 
 interface JsonLdNode {
   source: Record<string, unknown>;
@@ -145,8 +114,7 @@ const unknownRuleId = RuleId.make("structured.unknown-type");
 export const structuredUnknownTypeRule: AuditRule = {
   id: unknownRuleId,
   name: "JSON-LD Recognized Types",
-  description:
-    "Flags JSON-LD @types not in the recognized schema.org allowlist",
+  description: "Flags JSON-LD @types not found in the schema.org vocabulary",
   category: "structured",
   weight: 3,
   run(page: PageData) {
@@ -163,7 +131,7 @@ export const structuredUnknownTypeRule: AuditRule = {
       return [];
     }
 
-    const unknown = types.filter((t) => !KNOWN_TYPES.has(t.type));
+    const unknown = types.filter((t) => !isClass(t.type));
     if (unknown.length === 0) {
       return [
         AuditFinding.make({
@@ -180,6 +148,8 @@ export const structuredUnknownTypeRule: AuditRule = {
     const context = unknown.map((u, i) =>
       FindingContext.make({ label: `@type #${i + 1}`, value: u.type })
     );
+    const firstHint = suggestClass(unknown[0]?.type ?? "");
+    const hintSuffix = firstHint === null ? "" : ` Did you mean ${firstHint}?`;
 
     return [
       AuditFinding.make({
@@ -188,7 +158,7 @@ export const structuredUnknownTypeRule: AuditRule = {
         category: "structured",
         severity: "info",
         title: "Unrecognized JSON-LD @type",
-        message: `${unknown.length} @type value${unknown.length === 1 ? "" : "s"} not in the known schema.org allowlist (possible typo).`,
+        message: `${unknown.length} @type value${unknown.length === 1 ? "" : "s"} not in the schema.org vocabulary.${hintSuffix}`,
         context,
         grep: unknown[0]?.type,
       }),

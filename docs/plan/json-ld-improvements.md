@@ -373,7 +373,7 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 
 **Done when:** `bun run update-schema` (in `packages/seo-rules`) regenerates `schema-vocab.ts`; file compiles; classes set contains >800 entries.
 
-### Step 3 — Vocab query helpers
+### ✅ Step 3 — Vocab query helpers
 
 **Goal:** ergonomic read API over generated data.
 **Files:**
@@ -388,7 +388,7 @@ Each step is self-contained and independently mergeable. Hand any step to a futu
 
 **Done when:** tests pass.
 
-### Step 4 — Rewire rules to vocab, delete allowlists
+### ✅ Step 4 — Rewire rules to vocab, delete allowlists
 
 **Goal:** single source of truth for `@type` recognition.
 **Files:**
