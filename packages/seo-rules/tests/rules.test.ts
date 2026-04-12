@@ -356,6 +356,15 @@ describe("structuredRichResultsRecommendedRule", () => {
     author: { "@type": "Person", name: "Jane" },
     dateModified: "2026-04-12",
     publisher: { "@type": "Organization", name: "Pub" },
+    mainEntityOfPage: "https://example.com/a",
+    articleSection: "Tech",
+    articleBody: "Body.",
+    wordCount: 42,
+    keywords: ["a"],
+    inLanguage: "en",
+    isAccessibleForFree: true,
+    about: "x",
+    description: "desc",
   };
 
   it("passes when all recommended fields present", () => {

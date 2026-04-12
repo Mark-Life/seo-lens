@@ -48,6 +48,13 @@ describe("isSubClassOf", () => {
     expect(isSubClassOf("Article", "NewsArticle")).toBe(false);
     expect(isSubClassOf("Nonsense", "Thing")).toBe(false);
   });
+
+  it("walks all branches of the DAG for multi-parent classes", () => {
+    expect(isSubClassOf("HowToStep", "ListItem")).toBe(true);
+    expect(isSubClassOf("HowToStep", "CreativeWork")).toBe(true);
+    expect(isSubClassOf("HowToStep", "ItemList")).toBe(true);
+    expect(isSubClassOf("HowToStep", "Thing")).toBe(true);
+  });
 });
 
 describe("propertiesOf", () => {
@@ -77,6 +84,12 @@ describe("propertyValidFor", () => {
 
   it("passes unknown properties through (no signal)", () => {
     expect(propertyValidFor("notARealProp", "Article")).toBe(true);
+  });
+
+  it("accepts properties inherited via a non-primary parent in the DAG", () => {
+    expect(propertyValidFor("text", "HowToStep")).toBe(true);
+    expect(propertyValidFor("image", "HowToStep")).toBe(true);
+    expect(propertyValidFor("name", "HowToStep")).toBe(true);
   });
 });
 

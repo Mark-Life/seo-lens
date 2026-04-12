@@ -18,7 +18,13 @@ export const FAQPageRequired = Schema.Struct({
   mainEntity: Schema.Array(Question),
 });
 
-export const FAQPageRecommended = Schema.Struct({});
+export const FAQPageRecommended = Schema.Struct({
+  description: Schema.String,
+  inLanguage: Schema.Unknown,
+  author: Schema.Unknown,
+  datePublished: Schema.String,
+  dateModified: Schema.String,
+});
 
 export const faqPageSpec: RichResultSpec = {
   type: "FAQPage",

@@ -7,6 +7,7 @@ export {
 } from "./indexing";
 export {
   deriveJsonLdBlocks,
+  type FieldSuggestion,
   type JsonLdArrayNode,
   type JsonLdBlock,
   type JsonLdNode,

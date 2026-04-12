@@ -4,39 +4,37 @@ import { schemaVocab } from "../generated/schema-vocab";
 export const isClass = (type: string): boolean => schemaVocab.classes.has(type);
 
 /**
- * True when `child` is `parent` or transitively subclasses it.
- * Walks the `subClassOf` chain; guarded against cycles.
+ * Set of `type` plus every transitive parent in the schema.org DAG.
+ * BFS over `subClassOf`, guarded against cycles. Includes `type` itself.
+ */
+const ancestorsOf = (type: string): ReadonlySet<string> => {
+  const seen = new Set<string>([type]);
+  const queue: string[] = [type];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    const parents = schemaVocab.subClassOf.get(current);
+    if (parents === undefined) {
+      continue;
+    }
+    for (const p of parents) {
+      if (!seen.has(p)) {
+        seen.add(p);
+        queue.push(p);
+      }
+    }
+  }
+  return seen;
+};
+
+/**
+ * True when `child` is `parent` or transitively subclasses it via any
+ * ancestor branch of the `subClassOf` DAG.
  */
 export const isSubClassOf = (child: string, parent: string): boolean => {
   if (child === parent) {
     return isClass(child);
   }
-  const seen = new Set<string>();
-  let current: string | undefined = schemaVocab.subClassOf.get(child);
-  while (current !== undefined) {
-    if (current === parent) {
-      return true;
-    }
-    if (seen.has(current)) {
-      return false;
-    }
-    seen.add(current);
-    current = schemaVocab.subClassOf.get(current);
-  }
-  return false;
-};
-
-/** Ordered list of ancestors starting at `type` and walking to the root. */
-const ancestorsOf = (type: string): readonly string[] => {
-  const chain: string[] = [type];
-  const seen = new Set<string>([type]);
-  let current: string | undefined = schemaVocab.subClassOf.get(type);
-  while (current !== undefined && !seen.has(current)) {
-    chain.push(current);
-    seen.add(current);
-    current = schemaVocab.subClassOf.get(current);
-  }
-  return chain;
+  return ancestorsOf(child).has(parent);
 };
 
 /**
@@ -47,7 +45,7 @@ export const propertiesOf = (type: string): ReadonlySet<string> => {
   if (!isClass(type)) {
     return new Set();
   }
-  const ancestors = new Set(ancestorsOf(type));
+  const ancestors = ancestorsOf(type);
   const out = new Set<string>();
   for (const [prop, domains] of schemaVocab.propertyDomains) {
     for (const d of domains) {

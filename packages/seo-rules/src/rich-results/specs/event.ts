@@ -16,6 +16,10 @@ export const EventRecommended = Schema.Struct({
   offers: Schema.Unknown,
   performer: Schema.Unknown,
   organizer: Schema.Unknown,
+  eventStatus: Schema.Unknown,
+  eventAttendanceMode: Schema.Unknown,
+  url: Schema.String,
+  inLanguage: Schema.Unknown,
 });
 
 export const eventSpec: RichResultSpec = {

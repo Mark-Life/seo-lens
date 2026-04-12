@@ -5,7 +5,10 @@ import {
 import type { PageData } from "../schema";
 import { isClass, propertyValidFor, suggestClass } from "../vocab/query";
 
-export type { RichResultsReport } from "../rich-results/validate";
+export type {
+  FieldSuggestion,
+  RichResultsReport,
+} from "../rich-results/validate";
 
 export interface NodeValidity {
   readonly note?: string;

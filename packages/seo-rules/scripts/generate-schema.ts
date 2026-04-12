@@ -4,7 +4,7 @@
  * Extracts:
  * - classes: schema: namespaced `rdfs:Class` entries
  * - properties: schema: namespaced `rdf:Property` entries
- * - subClassOf: child -> first schema: parent (chain walked at query time)
+ * - subClassOf: child -> all schema: parents (DAG walked at query time)
  * - propertyDomains: property -> schema: classes from `schema:domainIncludes`
  * - propertyRanges: property -> schema: classes from `schema:rangeIncludes`
  *
@@ -88,7 +88,7 @@ const main = () => {
 
   const classes = new Set<string>();
   const properties = new Set<string>();
-  const subClassOf = new Map<string, string>();
+  const subClassOf = new Map<string, Set<string>>();
   const propertyDomains = new Map<string, Set<string>>();
   const propertyRanges = new Map<string, Set<string>>();
 
@@ -101,9 +101,8 @@ const main = () => {
     if (hasType(node, "rdfs:Class")) {
       classes.add(localId);
       const parents = refsToLocalNames(asArray(node["rdfs:subClassOf"]));
-      const firstSchemaParent = parents[0];
-      if (firstSchemaParent) {
-        subClassOf.set(localId, firstSchemaParent);
+      if (parents.length > 0) {
+        subClassOf.set(localId, new Set(parents));
       }
     }
 
@@ -162,7 +161,7 @@ interface Extracted {
   readonly properties: ReadonlySet<string>;
   readonly propertyDomains: ReadonlyMap<string, ReadonlySet<string>>;
   readonly propertyRanges: ReadonlyMap<string, ReadonlySet<string>>;
-  readonly subClassOf: ReadonlyMap<string, string>;
+  readonly subClassOf: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 const emit = (data: Extracted): string => {
@@ -180,10 +179,6 @@ const emit = (data: Extracted): string => {
 
   const stringList = (xs: readonly string[]) =>
     xs.map((x) => `  ${JSON.stringify(x)},`).join("\n");
-  const pairList = (xs: readonly (readonly [string, string])[]) =>
-    xs
-      .map(([k, v]) => `  [${JSON.stringify(k)}, ${JSON.stringify(v)}],`)
-      .join("\n");
   const setPairList = (
     xs: readonly (readonly [string, ReadonlySet<string>])[]
   ) =>
@@ -203,7 +198,7 @@ const emit = (data: Extracted): string => {
 export interface SchemaVocab {
   readonly classes: ReadonlySet<string>;
   readonly properties: ReadonlySet<string>;
-  readonly subClassOf: ReadonlyMap<string, string>;
+  readonly subClassOf: ReadonlyMap<string, ReadonlySet<string>>;
   readonly propertyDomains: ReadonlyMap<string, ReadonlySet<string>>;
   readonly propertyRanges: ReadonlyMap<string, ReadonlySet<string>>;
 }
@@ -216,8 +211,8 @@ const properties: ReadonlySet<string> = new Set([
 ${stringList(sortedProps)}
 ]);
 
-const subClassOf: ReadonlyMap<string, string> = new Map([
-${pairList(sortedSubClass)}
+const subClassOf: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+${setPairList(sortedSubClass)}
 ]);
 
 const propertyDomains: ReadonlyMap<string, ReadonlySet<string>> = new Map([

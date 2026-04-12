@@ -83,6 +83,7 @@ export {
   deriveJsonLdBlocks,
   deriveMetaView,
   deriveSocialView,
+  type FieldSuggestion,
   type ImageView,
   type IndexingRow,
   type IndexingStatus,

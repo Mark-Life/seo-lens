@@ -14,6 +14,15 @@ const baseArticle = {
     name: "Example",
     logo: { "@type": "ImageObject", url: "https://example.com/logo.png" },
   },
+  mainEntityOfPage: "https://example.com/hello",
+  articleSection: "Tech",
+  articleBody: "Body text.",
+  wordCount: 42,
+  keywords: ["hello", "world"],
+  inLanguage: "en",
+  isAccessibleForFree: true,
+  about: "Greetings",
+  description: "An example article",
 };
 
 describe("validateBlock — Article spec", () => {
@@ -43,7 +52,10 @@ describe("validateBlock — Article spec", () => {
   });
 
   it("returns null for types with no registered spec", () => {
-    const report = validateBlock({ "@type": "Person", name: "Jane" }, "Person");
+    const report = validateBlock(
+      { "@type": "Dataset", name: "Census 2020" },
+      "Dataset"
+    );
     expect(report).toBeNull();
   });
 
@@ -53,6 +65,27 @@ describe("validateBlock — Article spec", () => {
     const paths = report?.recommendedErrors.map((e) => e.path) ?? [];
     expect(paths).toContain("/dateModified");
     expect(report?.requiredErrors).toHaveLength(0);
+  });
+
+  it("populates suggestions for missing top-level fields", () => {
+    const bare = { "@type": "Article" as const, headline: "Hello" };
+    const report = validateBlock(bare, "Article");
+    const req = report?.suggestions
+      .filter((s) => s.severity === "required")
+      .map((s) => s.name);
+    const rec = report?.suggestions
+      .filter((s) => s.severity === "recommended")
+      .map((s) => s.name);
+    expect(req).toEqual(
+      expect.arrayContaining(["image", "datePublished", "author"])
+    );
+    expect(req).not.toContain("headline");
+    expect(rec).toEqual(expect.arrayContaining(["dateModified", "publisher"]));
+  });
+
+  it("leaves suggestions empty when the block is complete", () => {
+    const report = validateBlock(baseArticle, "Article");
+    expect(report?.suggestions).toHaveLength(0);
   });
 });
 

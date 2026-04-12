@@ -7,11 +7,21 @@ export interface FieldError {
   readonly path: string;
 }
 
+/**
+ * A top-level field the spec expects but the raw block is missing.
+ * Drives the "show suggestions" ghost-row UI.
+ */
+export interface FieldSuggestion {
+  readonly name: string;
+  readonly severity: "required" | "recommended";
+}
+
 export interface RichResultsReport {
   readonly docUrl: string;
   readonly recommendedErrors: readonly FieldError[];
   readonly requiredErrors: readonly FieldError[];
   readonly spec: string;
+  readonly suggestions: readonly FieldSuggestion[];
 }
 
 /** JSON-pointer-escape a single path segment (RFC 6901). */
@@ -45,23 +55,81 @@ const decodeIssues = (
 };
 
 /**
- * Walk `type` and its schema.org ancestors looking for a registered spec.
- * Returns the most specific match, or null.
+ * Non-optional top-level property names in a Struct spec. Skips `@`-prefixed
+ * keys and anything not declared as a plain `PropertySignature`.
+ */
+const topLevelFields = (schema: Schema.Schema.AnyNoContext): string[] => {
+  const ast = schema.ast;
+  if (ast._tag !== "TypeLiteral") {
+    return [];
+  }
+  const out: string[] = [];
+  for (const sig of ast.propertySignatures) {
+    if (sig.isOptional) {
+      continue;
+    }
+    const name = String(sig.name);
+    if (name.startsWith("@")) {
+      continue;
+    }
+    out.push(name);
+  }
+  return out;
+};
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+const collectSuggestions = (
+  spec: {
+    readonly required: Schema.Schema.AnyNoContext;
+    readonly recommended: Schema.Schema.AnyNoContext;
+  },
+  raw: unknown
+): FieldSuggestion[] => {
+  const present = isRecord(raw) ? new Set(Object.keys(raw)) : new Set<string>();
+  const out: FieldSuggestion[] = [];
+  for (const name of topLevelFields(spec.required)) {
+    if (!present.has(name)) {
+      out.push({ name, severity: "required" });
+    }
+  }
+  for (const name of topLevelFields(spec.recommended)) {
+    if (!present.has(name)) {
+      out.push({ name, severity: "recommended" });
+    }
+  }
+  return out;
+};
+
+/**
+ * Walk `type` and its schema.org ancestors (DAG BFS) looking for a registered
+ * spec. Returns the closest match by BFS order, or null.
  */
 const resolveSpec = (type: string) => {
   const direct = specsByType.get(type);
   if (direct !== undefined) {
     return direct;
   }
-  const seen = new Set<string>();
-  let current: string | undefined = schemaVocab.subClassOf.get(type);
-  while (current !== undefined && !seen.has(current)) {
-    const hit = specsByType.get(current);
-    if (hit !== undefined) {
-      return hit;
+  const seen = new Set<string>([type]);
+  const queue: string[] = [type];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    const parents = schemaVocab.subClassOf.get(current);
+    if (parents === undefined) {
+      continue;
     }
-    seen.add(current);
-    current = schemaVocab.subClassOf.get(current);
+    for (const p of parents) {
+      if (seen.has(p)) {
+        continue;
+      }
+      const hit = specsByType.get(p);
+      if (hit !== undefined) {
+        return hit;
+      }
+      seen.add(p);
+      queue.push(p);
+    }
   }
   return null;
 };
@@ -83,5 +151,6 @@ export const validateBlock = (
     docUrl: spec.docUrl,
     requiredErrors: decodeIssues(spec.required, raw),
     recommendedErrors: decodeIssues(spec.recommended, raw),
+    suggestions: collectSuggestions(spec, raw),
   };
 };

@@ -35,13 +35,22 @@ export const ArticleRequired = Schema.Struct({
 });
 
 /**
- * Google Article Rich Results — recommended fields.
- * Fields are required here so missing ones surface as decode errors,
- * which the validator maps to `warning` severity.
+ * Article recommended fields — mix of Google's Rich Results recommendations
+ * (`dateModified`, `publisher`) and broader discoverability fields. Missing
+ * ones surface as `warning` findings and as ghost rows in the tree.
  */
 export const ArticleRecommended = Schema.Struct({
   dateModified: Schema.String,
   publisher: Schema.Unknown,
+  mainEntityOfPage: Schema.Unknown,
+  articleSection: Schema.Unknown,
+  articleBody: Schema.String,
+  wordCount: Schema.Unknown,
+  keywords: Schema.Unknown,
+  inLanguage: Schema.Unknown,
+  isAccessibleForFree: Schema.Unknown,
+  about: Schema.Unknown,
+  description: Schema.String,
 });
 
 export const articleSpec: RichResultSpec = {

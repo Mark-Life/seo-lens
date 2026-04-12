@@ -1,4 +1,5 @@
 import type {
+  FieldSuggestion,
   JsonLdArrayNode,
   JsonLdBlock,
   JsonLdNode,
@@ -6,7 +7,7 @@ import type {
   JsonLdPrimitiveNode,
   RichResultsReport,
 } from "@workspace/seo-rules";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { useState } from "react";
 import { CopyButton } from "./copy-button";
 
@@ -294,8 +295,19 @@ const TONE_CLASSES: Record<RichResultsTone, string> = {
   warn: "border-amber-500/30 bg-amber-500/[0.06] text-amber-600 dark:text-amber-400",
 };
 
-const RichResultsBar = ({ report }: { readonly report: RichResultsReport }) => {
+interface RichResultsBarProps {
+  readonly onToggleSuggestions: () => void;
+  readonly report: RichResultsReport;
+  readonly showSuggestions: boolean;
+}
+
+const RichResultsBar = ({
+  report,
+  showSuggestions,
+  onToggleSuggestions,
+}: RichResultsBarProps) => {
   const summary = summarize(report);
+  const suggestionCount = report.suggestions.length;
   return (
     <div
       className={`flex items-center gap-2 border-b px-3 py-1.5 font-mono text-[10px] ${TONE_CLASSES[summary.tone]}`}
@@ -304,14 +316,31 @@ const RichResultsBar = ({ report }: { readonly report: RichResultsReport }) => {
         {summary.glyph}
       </span>
       <span className="shrink-0 font-semibold uppercase tracking-wider">
-        {report.spec}
+        SEO fields
       </span>
       <span aria-hidden className="shrink-0 opacity-40">
-        —
+        ·
       </span>
       <span className="min-w-0 flex-1 truncate" title={summary.message}>
+        <span className="opacity-80">{report.spec}</span>
+        <span aria-hidden className="opacity-40">
+          {" "}
+          —{" "}
+        </span>
         {summary.message}
       </span>
+      {suggestionCount > 0 && (
+        <button
+          aria-pressed={showSuggestions}
+          className="shrink-0 underline decoration-dotted underline-offset-2 opacity-70 transition-opacity hover:opacity-100"
+          onClick={onToggleSuggestions}
+          type="button"
+        >
+          {showSuggestions
+            ? "hide suggestions"
+            : `+ ${suggestionCount} suggestion${suggestionCount === 1 ? "" : "s"}`}
+        </button>
+      )}
       <a
         className="shrink-0 underline decoration-dotted underline-offset-2 opacity-70 transition-opacity hover:opacity-100"
         href={report.docUrl}
@@ -320,6 +349,67 @@ const RichResultsBar = ({ report }: { readonly report: RichResultsReport }) => {
       >
         docs
       </a>
+    </div>
+  );
+};
+
+const SUGGESTION_TONE: Record<FieldSuggestion["severity"], string> = {
+  required: "text-destructive/80",
+  recommended: "text-amber-600 dark:text-amber-400",
+};
+
+const SUGGESTION_DOT: Record<FieldSuggestion["severity"], string> = {
+  required: "bg-destructive/70",
+  recommended: "bg-amber-500/80",
+};
+
+const SuggestionRow = ({
+  suggestion,
+}: {
+  readonly suggestion: FieldSuggestion;
+}) => (
+  <div className="group/row relative flex min-h-[18px] items-center gap-1.5 py-px pr-8">
+    <Plus
+      aria-hidden
+      className="size-3 shrink-0 text-muted-foreground/50"
+      strokeWidth={2.5}
+    />
+    <span
+      aria-hidden
+      className={`size-1.5 shrink-0 rounded-full ${SUGGESTION_DOT[suggestion.severity]}`}
+    />
+    <span
+      className={`shrink-0 font-mono text-[10.5px] italic underline decoration-dotted underline-offset-2 ${SUGGESTION_TONE[suggestion.severity]}`}
+      title={`${suggestion.severity} · not present in this block`}
+    >
+      {suggestion.name}
+    </span>
+    <span className="font-mono text-[10.5px] text-muted-foreground/50">
+      {suggestion.severity === "required" ? "required" : "recommended"}
+    </span>
+    <HoverCopy
+      label={`Copy ${suggestion.name} stub`}
+      payload={`"${suggestion.name}": ""`}
+    />
+  </div>
+);
+
+const SuggestionList = ({
+  suggestions,
+}: {
+  readonly suggestions: readonly FieldSuggestion[];
+}) => {
+  if (suggestions.length === 0) {
+    return null;
+  }
+  return (
+    <div className="mt-1 border-border/50 border-l pl-3">
+      <div className="pb-1 font-mono text-[9px] text-muted-foreground/60 uppercase tracking-wider">
+        could add
+      </div>
+      {suggestions.map((s) => (
+        <SuggestionRow key={s.name} suggestion={s} />
+      ))}
     </div>
   );
 };
@@ -360,6 +450,53 @@ const RootBody = ({ root }: RootBodyProps) => {
   );
 };
 
+const BlockCard = ({ block }: { readonly block: JsonLdBlock }) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestions = block.richResults?.suggestions ?? [];
+  return (
+    <li
+      className={`overflow-hidden rounded-md border bg-card ${
+        block.typeValid
+          ? "border-border"
+          : "border-destructive/50 ring-1 ring-destructive/20"
+      }`}
+    >
+      <div className="flex items-center gap-2 border-border/60 border-b px-3 py-2">
+        <span
+          className={`font-mono text-[9px] uppercase tracking-wider ${
+            block.typeValid ? "text-primary" : "text-destructive"
+          }`}
+        >
+          {block.typeValid ? "schema.org ✓" : "schema.org ✕"}
+        </span>
+        <span
+          className={`font-display text-[12px] ${
+            block.typeValid ? "text-foreground" : "text-destructive"
+          }`}
+        >
+          {block.type}
+        </span>
+        {block.typeSuggestion && (
+          <span className="ml-auto font-mono text-[9px] text-destructive/90 italic">
+            Did you mean {block.typeSuggestion}?
+          </span>
+        )}
+      </div>
+      {block.richResults && (
+        <RichResultsBar
+          onToggleSuggestions={() => setShowSuggestions((v) => !v)}
+          report={block.richResults}
+          showSuggestions={showSuggestions}
+        />
+      )}
+      <div className="px-3 py-2">
+        <RootBody root={block.root} />
+        {showSuggestions && <SuggestionList suggestions={suggestions} />}
+      </div>
+    </li>
+  );
+};
+
 export function JsonLdTree({ blocks }: JsonLdTreeProps) {
   if (blocks.length === 0) {
     return null;
@@ -367,40 +504,7 @@ export function JsonLdTree({ blocks }: JsonLdTreeProps) {
   return (
     <ul className="mt-3 flex flex-col gap-2">
       {blocks.map((block) => (
-        <li
-          className={`overflow-hidden rounded-md border bg-card ${
-            block.typeValid
-              ? "border-border"
-              : "border-destructive/50 ring-1 ring-destructive/20"
-          }`}
-          key={block.id}
-        >
-          <div className="flex items-center gap-2 border-border/60 border-b px-3 py-2">
-            <span
-              className={`font-mono text-[9px] uppercase tracking-wider ${
-                block.typeValid ? "text-primary" : "text-destructive"
-              }`}
-            >
-              {block.typeValid ? "schema.org ✓" : "schema.org ✕"}
-            </span>
-            <span
-              className={`font-display text-[12px] ${
-                block.typeValid ? "text-foreground" : "text-destructive"
-              }`}
-            >
-              {block.type}
-            </span>
-            {block.typeSuggestion && (
-              <span className="ml-auto font-mono text-[9px] text-destructive/90 italic">
-                Did you mean {block.typeSuggestion}?
-              </span>
-            )}
-          </div>
-          {block.richResults && <RichResultsBar report={block.richResults} />}
-          <div className="px-3 py-2">
-            <RootBody root={block.root} />
-          </div>
-        </li>
+        <BlockCard block={block} key={block.id} />
       ))}
     </ul>
   );
