@@ -8,6 +8,8 @@ Scopes are ordered by dependency and delivery cost, not as strict phases. Work c
 
 ## ✅ Scope A — Smarter JSON-LD Recommendations
 
+Shipped in [#2](https://github.com/Mark-Life/seo-lens/pull/2).
+
 **Goal:** proactively recommend the schema.org types a page *should* have, based on its content, instead of only validating what is already declared.
 
 Today the engine recognizes schema.org types present in JSON-LD and flags missing fields on those types. It says nothing when the page has no structured data at all, or when the declared schema mismatches the page content.
