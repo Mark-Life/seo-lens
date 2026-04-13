@@ -1,7 +1,6 @@
 import {
   AuditError,
   Loading,
-  type PageData,
   Ready,
   Restricted,
   Running,
@@ -47,7 +46,7 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
   yield* bus.publish(tabId, Running.make({ reason }));
 
   const program = Effect.gen(function* () {
-    const page: PageData = yield* extractor.extract(tabId);
+    const { page, signals } = yield* extractor.extract(tabId);
     const cached = yield* cache.get(tabId);
     if (
       Option.isSome(cached) &&
@@ -61,7 +60,7 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
       );
       return;
     }
-    const result = yield* auditor.audit(page);
+    const result = yield* auditor.audit(page, signals);
     yield* cache.set(tabId, { url: page.url, result, at: Date.now() });
     yield* bus.publish(tabId, Ready.make({ page, result }));
     if (page.headings.length === 0 && reason !== "settle") {

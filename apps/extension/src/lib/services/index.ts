@@ -10,7 +10,7 @@ export { Auditor } from "./auditor";
 export { BrowserApi, type TabEvent, type TabInfo } from "./browser-api";
 export { AuditBus } from "./bus";
 export { AuditCache, type CacheEntry } from "./cache";
-export { Extractor } from "./extractor";
+export { type ExtractedPage, Extractor } from "./extractor";
 export { Fetcher } from "./fetcher";
 
 export const appLayer = Layer.mergeAll(

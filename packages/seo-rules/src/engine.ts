@@ -5,6 +5,7 @@ import {
   CategoryScore,
   FindingCounts,
   type PageData,
+  type PageSignals,
   Score,
 } from "./schema";
 import type { AuditRule } from "./types";
@@ -12,7 +13,11 @@ import type { AuditRule } from "./types";
 const WARNING_PENALTY = 0.5;
 const MAX_SCORE = 100;
 
-export function runAudit(page: PageData, rules: AuditRule[]): AuditResult {
+export function runAudit(
+  page: PageData,
+  signals: PageSignals,
+  rules: AuditRule[]
+): AuditResult {
   const findings: AuditFinding[] = [];
   const counts = { error: 0, warning: 0, info: 0, pass: 0 };
   const byCategory = new Map<Category, { total: number; earned: number }>();
@@ -20,7 +25,7 @@ export function runAudit(page: PageData, rules: AuditRule[]): AuditResult {
   let earnedWeight = 0;
 
   for (const rule of rules) {
-    const ruleFindings = rule.run(page);
+    const ruleFindings = rule.run(page, signals);
     findings.push(...ruleFindings);
 
     for (const f of ruleFindings) {

@@ -164,26 +164,31 @@ export function FindingsSection({ findings }: FindingsSectionProps) {
                 <div className="mt-3 ml-[34px] flex flex-col gap-3 border-foreground/15 border-l pl-3">
                   <p className="text-[12px] text-foreground/80">{f.message}</p>
 
-                  {f.context && f.context.length > 0 && (
-                    <div className="flex flex-col gap-1 rounded-sm border border-border bg-muted/30 p-2.5">
-                      <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
-                        {categoryLabels[f.category]}
-                      </div>
-                      {f.context.map((c, idx) => (
-                        <div
-                          className="kv-row text-[11px]"
-                          key={`${f.id}-c-${idx}`}
-                        >
-                          <span className="font-mono text-muted-foreground">
-                            {c.label}
-                          </span>
-                          <span className="kv-leader" />
-                          <span className="max-w-[220px] truncate font-mono text-foreground">
-                            {c.value}
-                          </span>
+                  {f.ruleId.startsWith("structured.recommend") ? (
+                    <RecommendContext finding={f} />
+                  ) : (
+                    f.context &&
+                    f.context.length > 0 && (
+                      <div className="flex flex-col gap-1 rounded-sm border border-border bg-muted/30 p-2.5">
+                        <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
+                          {categoryLabels[f.category]}
                         </div>
-                      ))}
-                    </div>
+                        {f.context.map((c, idx) => (
+                          <div
+                            className="kv-row text-[11px]"
+                            key={`${f.id}-c-${idx}`}
+                          >
+                            <span className="font-mono text-muted-foreground">
+                              {c.label}
+                            </span>
+                            <span className="kv-leader" />
+                            <span className="max-w-[220px] truncate font-mono text-foreground">
+                              {c.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )
                   )}
 
                   {f.grep && (
@@ -202,6 +207,61 @@ export function FindingsSection({ findings }: FindingsSectionProps) {
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+function RecommendContext({ finding }: { readonly finding: AuditFinding }) {
+  const context = finding.context ?? [];
+  const template = context.find((c) => c.label === "template")?.value;
+  const reasons = context
+    .filter((c) => c.label === "reason")
+    .map((c) => c.value);
+
+  if (!template && reasons.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {reasons.length > 0 && (
+        <div className="flex flex-col gap-1 rounded-sm border border-border bg-muted/30 p-2.5">
+          <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
+            Why we recommend this
+          </div>
+          <ul className="mt-1 flex flex-col gap-1">
+            {reasons.map((r, idx) => (
+              <li
+                className="flex gap-1.5 text-[11px] text-foreground/80"
+                key={`${finding.id}-r-${idx}`}
+              >
+                <span className="text-muted-foreground">·</span>
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {template && (
+        <div className="flex flex-col gap-1 rounded-sm border border-border bg-muted/30 p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
+              Template — paste into a &lt;script
+              type=&quot;application/ld+json&quot;&gt;
+            </div>
+            <CopyButton
+              label="Copy template"
+              payload={template}
+              size="sm"
+              stopPropagation
+            />
+          </div>
+          <pre className="wrap-break-word mt-1 whitespace-pre-wrap font-mono text-[11px] text-foreground">
+            {template}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }

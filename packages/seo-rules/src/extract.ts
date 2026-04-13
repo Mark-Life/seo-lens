@@ -230,6 +230,153 @@ export const extractFromDocument = (doc: Document, url: PageUrl): unknown => {
   };
 };
 
+// ─── PageSignals extraction (scope A: page-kind detection) ────────────
+
+const PRICE_RE = /(?:[$€£]|\bUSD|\bEUR)\s?\d/;
+const CART_AFFORDANCE_RE = /add to cart|buy now|add to bag/i;
+const WHITESPACE_RUN_RE = /\s+/g;
+
+const extractTimeElements = (
+  doc: Document
+): readonly { datetime: string; text: string }[] =>
+  Array.from(doc.querySelectorAll("time[datetime]")).map((el) => ({
+    datetime: el.getAttribute("datetime") || "",
+    text: el.textContent?.trim() || "",
+  }));
+
+const extractMicrodataTypes = (doc: Document): readonly string[] => {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const el of doc.querySelectorAll("[itemtype]")) {
+    const t = el.getAttribute("itemtype");
+    if (t && !seen.has(t)) {
+      seen.add(t);
+      out.push(t);
+    }
+  }
+  return out;
+};
+
+const extractPricePatterns = (
+  root: Element
+): readonly { snippet: string; nearH1: boolean }[] => {
+  const text = root.textContent || "";
+  const m = PRICE_RE.exec(text);
+  if (!m) {
+    return [];
+  }
+  const start = Math.max(0, m.index - 10);
+  const snippet = text
+    .slice(start, m.index + 30)
+    .replace(WHITESPACE_RUN_RE, " ")
+    .trim();
+
+  let nearH1 = false;
+  const h1 = root.querySelector("h1");
+  if (h1) {
+    let p: Element | null = h1;
+    for (let i = 0; i < 4 && p; i++) {
+      if (PRICE_RE.test(p.textContent || "")) {
+        nearH1 = true;
+        break;
+      }
+      p = p.parentElement;
+    }
+  }
+  return [{ snippet, nearH1 }];
+};
+
+const extractCartAffordances = (root: Element): readonly string[] => {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const el of root.querySelectorAll(
+    'button, a, input[type="button"], input[type="submit"]'
+  )) {
+    const text = (el.textContent || el.getAttribute("value") || "").trim();
+    if (text && CART_AFFORDANCE_RE.test(text) && !seen.has(text)) {
+      seen.add(text);
+      out.push(text);
+      if (out.length >= 5) {
+        break;
+      }
+    }
+  }
+  return out;
+};
+
+const BREADCRUMB_SELECTORS: readonly string[] = [
+  'nav[aria-label*="breadcrumb" i]',
+  'ol[class*="breadcrumb" i]',
+  'ul[class*="breadcrumb" i]',
+  '[itemtype*="BreadcrumbList"]',
+];
+
+const extractBreadcrumbDom = (
+  doc: Document,
+  url: PageUrl
+): {
+  selector: string;
+  items: readonly { text: string; href: string }[];
+} | null => {
+  for (const selector of BREADCRUMB_SELECTORS) {
+    const el = doc.querySelector(selector);
+    if (!el) {
+      continue;
+    }
+    const items = Array.from(el.querySelectorAll("a[href]")).map((a) => ({
+      text: a.textContent?.trim() || "",
+      href: toAbsolute(a.getAttribute("href") || "", url),
+    }));
+    if (items.length > 0) {
+      return { selector, items };
+    }
+  }
+  return null;
+};
+
+const parseUrlPath = (
+  url: PageUrl
+): { segments: readonly string[]; isRoot: boolean } => {
+  try {
+    const u = new URL(url);
+    const segments = u.pathname.split("/").filter(Boolean);
+    return { segments, isRoot: segments.length === 0 };
+  } catch {
+    return { segments: [], isRoot: false };
+  }
+};
+
+/**
+ * Extracts raw page signals used by the page-kind detector (scope A).
+ * The `*Like` confidence fields are populated by the detector itself and are
+ * emitted here as zero placeholders. All other fields are DOM-derived.
+ */
+export const extractPageSignals = (doc: Document, url: PageUrl): unknown => {
+  const auditRoot = findAuditRoot(doc);
+  const root = auditRoot.element;
+  const { segments, isRoot } = parseUrlPath(url);
+  const ogType =
+    doc.querySelector<HTMLMetaElement>('meta[property="og:type"]')?.content ||
+    null;
+  return {
+    articleLike: 0,
+    productLike: 0,
+    homepageLike: 0,
+    breadcrumbLike: 0,
+    hasArticleElement: doc.querySelector("article") !== null,
+    hasNavElement: doc.querySelector("nav") !== null,
+    articleTextLength: visibleTextLength(root),
+    ogType,
+    timeElements: extractTimeElements(doc),
+    microdataTypes: extractMicrodataTypes(doc),
+    pricePatterns: extractPricePatterns(root),
+    cartAffordances: extractCartAffordances(root),
+    breadcrumbDom: extractBreadcrumbDom(doc, url),
+    urlPathSegments: segments,
+    isRootPath: isRoot,
+  };
+};
+
 const describeElement = (el: Element): string => {
   const tag = el.tagName.toLowerCase();
   const id = el.id ? `#${el.id}` : "";

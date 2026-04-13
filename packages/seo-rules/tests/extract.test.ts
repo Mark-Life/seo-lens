@@ -1,7 +1,14 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Schema } from "effect";
 import { parseHTML } from "linkedom";
-import { extractFromDocument, findAuditRoot } from "../src/extract.js";
-import { PageUrl } from "../src/schema.js";
+import {
+  extractFromDocument,
+  extractPageSignals,
+  findAuditRoot,
+} from "../src/extract.js";
+import { PageSignals, PageUrl } from "../src/schema.js";
+
+const decodeSignals = Schema.decodeUnknownSync(PageSignals);
 
 const parse = (html: string): Document =>
   parseHTML(html).document as unknown as Document;
@@ -117,6 +124,70 @@ describe("extractFromDocument scopes body data to audit root", () => {
     for (const t of mustNotContain) {
       expect(texts).not.toContain(t);
     }
+  });
+
+  it("extractPageSignals populates raw DOM signals and decodes into PageSignals", () => {
+    const doc = parse(
+      `<!doctype html><html><head>
+        <meta property="og:type" content="article">
+      </head><body>
+        <nav aria-label="Breadcrumb"><ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/blog">Blog</a></li>
+        </ol></nav>
+        <article>
+          <h1>Post Title</h1>
+          <time datetime="2026-01-01">Jan 1, 2026</time>
+          <p>${"x".repeat(200)}</p>
+        </article>
+      </body></html>`
+    );
+    const raw = extractPageSignals(
+      doc,
+      PageUrl.make("https://example.com/blog/post-1")
+    );
+    const signals = decodeSignals(raw);
+    expect(signals.hasArticleElement).toBe(true);
+    expect(signals.hasNavElement).toBe(true);
+    expect(signals.ogType).toBe("article");
+    expect(signals.timeElements).toHaveLength(1);
+    expect(signals.timeElements[0]?.datetime).toBe("2026-01-01");
+    expect(signals.urlPathSegments).toEqual(["blog", "post-1"]);
+    expect(signals.isRootPath).toBe(false);
+    expect(signals.breadcrumbDom).not.toBeNull();
+    expect(signals.breadcrumbDom?.items).toHaveLength(2);
+    expect(signals.articleTextLength).toBeGreaterThan(0);
+  });
+
+  it("extractPageSignals detects product affordances and microdata", () => {
+    const doc = parse(
+      `<!doctype html><html><body>
+        <main itemtype="https://schema.org/Product">
+          <h1>Widget</h1>
+          <p>Price: $29.99</p>
+          <button>Add to Cart</button>
+        </main>
+      </body></html>`
+    );
+    const raw = extractPageSignals(
+      doc,
+      PageUrl.make("https://shop.example.com/p/widget")
+    );
+    const signals = decodeSignals(raw);
+    expect(signals.microdataTypes).toContain("https://schema.org/Product");
+    expect(signals.pricePatterns).toHaveLength(1);
+    expect(signals.pricePatterns[0]?.nearH1).toBe(true);
+    expect(signals.cartAffordances).toContain("Add to Cart");
+  });
+
+  it("extractPageSignals flags root path for homepage", () => {
+    const doc = parse(
+      "<!doctype html><html><body><main><h1>Home</h1></main></body></html>"
+    );
+    const raw = extractPageSignals(doc, PageUrl.make("https://example.com/"));
+    const signals = decodeSignals(raw);
+    expect(signals.isRootPath).toBe(true);
+    expect(signals.urlPathSegments).toEqual([]);
   });
 
   it("still extracts head-level data (title, meta) regardless of root", () => {

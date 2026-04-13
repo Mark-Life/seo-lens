@@ -1,6 +1,7 @@
 import {
   ExtractionFailed,
   PageData,
+  PageSignals,
   type RestrictedUrl,
   type TabId,
   type TabNotReady,
@@ -9,11 +10,20 @@ import { Context, Effect, Layer, Schema } from "effect";
 import { BrowserApi } from "./browser-api";
 
 const decodePageData = Schema.decodeUnknown(PageData);
+const decodePageSignals = Schema.decodeUnknown(PageSignals);
+
+export interface ExtractedPage {
+  readonly page: PageData;
+  readonly signals: PageSignals;
+}
 
 export interface ExtractorShape {
   readonly extract: (
     tabId: TabId
-  ) => Effect.Effect<PageData, ExtractionFailed | RestrictedUrl | TabNotReady>;
+  ) => Effect.Effect<
+    ExtractedPage,
+    ExtractionFailed | RestrictedUrl | TabNotReady
+  >;
 }
 
 export class Extractor extends Context.Tag("Extractor")<
@@ -35,31 +45,39 @@ export class Extractor extends Context.Tag("Extractor")<
           );
         yield* api.ensureAuditable(tab);
         const raw = yield* api
-          .sendMessage<unknown>(tabId, { type: "EXTRACT_PAGE_DATA" })
+          .sendMessage<{ page: unknown; signals: unknown }>(tabId, {
+            type: "EXTRACT_PAGE_DATA",
+          })
           .pipe(
             Effect.catchTag("NoActiveTab", (cause) =>
               Effect.fail(new ExtractionFailed({ tabId, cause }))
             )
           );
-        return yield* decodePageData(raw).pipe(
+        const page = yield* decodePageData(raw.page).pipe(
           Effect.catchTag("ParseError", (cause) =>
             Effect.fail(new ExtractionFailed({ tabId, cause }))
           )
         );
+        const signals = yield* decodePageSignals(raw.signals).pipe(
+          Effect.catchTag("ParseError", (cause) =>
+            Effect.fail(new ExtractionFailed({ tabId, cause }))
+          )
+        );
+        return { page, signals };
       });
 
       return Extractor.of({ extract });
     })
   );
 
-  static readonly testLayer = (pages: ReadonlyMap<TabId, PageData>) =>
+  static readonly testLayer = (pages: ReadonlyMap<TabId, ExtractedPage>) =>
     Layer.succeed(
       Extractor,
       Extractor.of({
         extract: (tabId) => {
-          const page = pages.get(tabId);
-          return page
-            ? Effect.succeed(page)
+          const extracted = pages.get(tabId);
+          return extracted
+            ? Effect.succeed(extracted)
             : Effect.fail(
                 new ExtractionFailed({ tabId, cause: "no stub page" })
               );
