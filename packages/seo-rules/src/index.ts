@@ -4,6 +4,14 @@ import { imagesAltRule } from "./rules/images-alt";
 import { canonicalRule, robotsRule } from "./rules/indexing";
 import { metaDescriptionRule } from "./rules/meta-description";
 import {
+  recommendArticleRule,
+  recommendBreadcrumbRule,
+  recommendConflictRule,
+  recommendOrganizationRule,
+  recommendProductRule,
+  recommendWebsiteRule,
+} from "./rules/recommendations";
+import {
   structuredRichResultsRecommendedRule,
   structuredRichResultsRequiredRule,
   structuredUnknownTypeRule,
@@ -24,8 +32,23 @@ export const defaultRules: readonly AuditRule[] = [
   structuredUnknownTypeRule,
   structuredRichResultsRequiredRule,
   structuredRichResultsRecommendedRule,
+  recommendArticleRule,
+  recommendProductRule,
+  recommendWebsiteRule,
+  recommendOrganizationRule,
+  recommendBreadcrumbRule,
+  recommendConflictRule,
 ];
 
+export { detectPageKind } from "./detect/page-kind";
+export {
+  articleWeights,
+  breadcrumbWeights,
+  EMIT_THRESHOLD,
+  homepageWeights,
+  productWeights,
+  STRONG_THRESHOLD,
+} from "./detect/weights";
 export { runAudit } from "./engine";
 export {
   AuditFailed,
@@ -35,12 +58,20 @@ export {
   RestrictedUrl,
   TabNotReady,
 } from "./errors";
-export { extractFromDocument } from "./extract";
+export { extractFromDocument, extractPageSignals } from "./extract";
 export { headingsRule } from "./rules/headings";
 export { headingsSkipRule } from "./rules/headings-skip";
 export { imagesAltRule } from "./rules/images-alt";
 export { canonicalRule, robotsRule } from "./rules/indexing";
 export { metaDescriptionRule } from "./rules/meta-description";
+export {
+  recommendArticleRule,
+  recommendBreadcrumbRule,
+  recommendConflictRule,
+  recommendOrganizationRule,
+  recommendProductRule,
+  recommendWebsiteRule,
+} from "./rules/recommendations";
 export {
   structuredRichResultsRecommendedRule,
   structuredRichResultsRequiredRule,
@@ -55,8 +86,11 @@ export {
   AuditRootInfo,
   AuditRootSource,
   AuditState,
+  BreadcrumbDom,
+  BreadcrumbDomItem,
   Category,
   CategoryScore,
+  Confidence,
   FindingContext,
   FindingCounts,
   HeadingData,
@@ -65,7 +99,11 @@ export {
   LinkData,
   Loading,
   PageData,
+  PageKind,
+  PageKindCandidate,
+  PageSignals,
   PageUrl,
+  PricePattern,
   Ready,
   Restricted,
   RuleId,
@@ -73,6 +111,7 @@ export {
   Score,
   Severity,
   TabId,
+  TimeElement,
 } from "./schema";
 export type { AuditRule } from "./types";
 export {

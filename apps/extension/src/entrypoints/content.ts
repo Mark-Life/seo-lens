@@ -1,7 +1,14 @@
-import { extractFromDocument, PageData, PageUrl } from "@workspace/seo-rules";
+import {
+  extractFromDocument,
+  extractPageSignals,
+  PageData,
+  PageSignals,
+  PageUrl,
+} from "@workspace/seo-rules";
 import { Either, Schema } from "effect";
 
 const decodePageData = Schema.decodeUnknownEither(PageData);
+const decodePageSignals = Schema.decodeUnknownEither(PageSignals);
 
 export default defineContentScript({
   matches: ["<all_urls>"],
@@ -48,15 +55,21 @@ export default defineContentScript({
       await nextFrame();
       await nextFrame();
       await waitForIdle(800);
-      const raw = extractFromDocument(
-        document,
-        PageUrl.make(document.location.href)
-      );
-      const decoded = decodePageData(raw);
-      if (Either.isLeft(decoded)) {
-        console.warn("[seo-lens] PageData schema mismatch", decoded.left);
+      const url = PageUrl.make(document.location.href);
+      const page = extractFromDocument(document, url);
+      const signals = extractPageSignals(document, url);
+      const decodedPage = decodePageData(page);
+      if (Either.isLeft(decodedPage)) {
+        console.warn("[seo-lens] PageData schema mismatch", decodedPage.left);
       }
-      return raw;
+      const decodedSignals = decodePageSignals(signals);
+      if (Either.isLeft(decodedSignals)) {
+        console.warn(
+          "[seo-lens] PageSignals schema mismatch",
+          decodedSignals.left
+        );
+      }
+      return { page, signals };
     };
 
     browser.runtime.onMessage.addListener(

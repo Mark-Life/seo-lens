@@ -83,6 +83,72 @@ export class PageData extends Schema.Class<PageData>("PageData")({
   auditRoot: AuditRootInfo,
 }) {}
 
+// ─── PageSignals (scope A: page-kind detection) ───────────────────────
+
+export const Confidence = Schema.Number.pipe(
+  Schema.between(0, 1),
+  Schema.brand("Confidence")
+);
+export type Confidence = typeof Confidence.Type;
+
+export const PageKind = Schema.Literal(
+  "article",
+  "product",
+  "homepage",
+  "breadcrumb-bearing"
+);
+export type PageKind = typeof PageKind.Type;
+
+export class TimeElement extends Schema.Class<TimeElement>("TimeElement")({
+  datetime: Schema.String,
+  text: Schema.String,
+}) {}
+
+export class PricePattern extends Schema.Class<PricePattern>("PricePattern")({
+  snippet: Schema.String,
+  nearH1: Schema.Boolean,
+}) {}
+
+export class BreadcrumbDomItem extends Schema.Class<BreadcrumbDomItem>(
+  "BreadcrumbDomItem"
+)({
+  text: Schema.String,
+  href: Schema.String,
+}) {}
+
+export class BreadcrumbDom extends Schema.Class<BreadcrumbDom>("BreadcrumbDom")(
+  {
+    selector: Schema.String,
+    items: Schema.Array(BreadcrumbDomItem),
+  }
+) {}
+
+export class PageSignals extends Schema.Class<PageSignals>("PageSignals")({
+  articleLike: Confidence,
+  productLike: Confidence,
+  homepageLike: Confidence,
+  breadcrumbLike: Confidence,
+  hasArticleElement: Schema.Boolean,
+  hasNavElement: Schema.Boolean,
+  articleTextLength: Schema.Int.pipe(Schema.nonNegative()),
+  ogType: Schema.NullOr(Schema.String),
+  timeElements: Schema.Array(TimeElement),
+  microdataTypes: Schema.Array(Schema.String),
+  pricePatterns: Schema.Array(PricePattern),
+  cartAffordances: Schema.Array(Schema.String),
+  breadcrumbDom: Schema.NullOr(BreadcrumbDom),
+  urlPathSegments: Schema.Array(Schema.String),
+  isRootPath: Schema.Boolean,
+}) {}
+
+export class PageKindCandidate extends Schema.Class<PageKindCandidate>(
+  "PageKindCandidate"
+)({
+  kind: PageKind,
+  confidence: Confidence,
+  reasons: Schema.Array(Schema.String),
+}) {}
+
 // ─── AuditFinding ──────────────────────────────────────────────────────
 
 export class FindingContext extends Schema.Class<FindingContext>(

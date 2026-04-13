@@ -13,14 +13,36 @@ import {
 import { titleRule } from "../src/rules/title.js";
 import {
   AuditRootInfo,
+  Confidence,
   type FindingContext,
   HeadingData,
   ImageData,
   PageData,
+  PageSignals,
   PageUrl,
   type Severity,
 } from "../src/schema.js";
 import type { AuditRule } from "../src/types.js";
+
+const ZERO = Confidence.make(0);
+
+const signals: PageSignals = PageSignals.make({
+  articleLike: ZERO,
+  productLike: ZERO,
+  homepageLike: ZERO,
+  breadcrumbLike: ZERO,
+  hasArticleElement: false,
+  hasNavElement: false,
+  articleTextLength: 0,
+  ogType: null,
+  timeElements: [],
+  microdataTypes: [],
+  pricePatterns: [],
+  cartAffordances: [],
+  breadcrumbDom: null,
+  urlPathSegments: [],
+  isRootPath: false,
+});
 
 const makePage = (
   overrides: Partial<{
@@ -60,7 +82,7 @@ interface RuleCase {
 
 const runTable = (rule: AuditRule, cases: readonly RuleCase[]) => {
   it.each(cases)("$name", ({ page, expected }) => {
-    const findings = rule.run(page);
+    const findings = rule.run(page, signals);
     expect(findings).toHaveLength(expected.length);
     expected.forEach((e, i) => {
       const f = findings[i];
@@ -101,14 +123,14 @@ describe("titleRule", () => {
     const page = makePage({
       title: "A perfectly reasonable page title here",
     });
-    const [finding] = titleRule.run(page);
+    const [finding] = titleRule.run(page, signals);
     expect(finding?.context?.[0]?.label).toBe("title");
     expect(finding?.context?.[1]?.label).toBe("length");
   });
 
   it("sets grep to the offending title on warnings", () => {
     const page = makePage({ title: "Short title" });
-    const [finding] = titleRule.run(page);
+    const [finding] = titleRule.run(page, signals);
     expect(finding?.grep).toBe("Short title");
   });
 });
@@ -164,7 +186,7 @@ describe("headingsRule", () => {
     const page = makePage({
       headings: [h(1, "First"), h(1, "Second")],
     });
-    const [finding] = headingsRule.run(page);
+    const [finding] = headingsRule.run(page, signals);
     expect(finding?.context?.map((c: FindingContext) => c.value)).toEqual([
       "First",
       "Second",
@@ -197,7 +219,7 @@ describe("headingsSkipRule", () => {
     const page = makePage({
       headings: [h(1, "A"), h(3, "C"), h(4, "D"), h(6, "F")],
     });
-    const [finding] = headingsSkipRule.run(page);
+    const [finding] = headingsSkipRule.run(page, signals);
     expect(finding?.context).toHaveLength(2);
   });
 });
@@ -229,7 +251,7 @@ describe("imagesAltRule", () => {
 
   it("uses image src as grep", () => {
     const page = makePage({ images: [img("/missing.png", null)] });
-    const [finding] = imagesAltRule.run(page);
+    const [finding] = imagesAltRule.run(page, signals);
     expect(finding?.grep).toBe("/missing.png");
   });
 });
@@ -265,14 +287,16 @@ describe("structuredValidRule", () => {
 
 describe("structuredUnknownTypeRule", () => {
   it("returns nothing when no JSON-LD", () => {
-    expect(structuredUnknownTypeRule.run(makePage({ jsonLd: [] }))).toEqual([]);
+    expect(
+      structuredUnknownTypeRule.run(makePage({ jsonLd: [] }), signals)
+    ).toEqual([]);
   });
 
   it("passes when all types are known", () => {
     const page = makePage({
       jsonLd: [{ "@context": "https://schema.org", "@type": "Article" }],
     });
-    const [finding] = structuredUnknownTypeRule.run(page);
+    const [finding] = structuredUnknownTypeRule.run(page, signals);
     expect(finding?.severity).toBe("pass");
   });
 
@@ -280,7 +304,7 @@ describe("structuredUnknownTypeRule", () => {
     const page = makePage({
       jsonLd: [{ "@context": "https://schema.org", "@type": "FakeType" }],
     });
-    const [finding] = structuredUnknownTypeRule.run(page);
+    const [finding] = structuredUnknownTypeRule.run(page, signals);
     expect(finding?.severity).toBe("info");
     expect(finding?.grep).toBe("FakeType");
   });
@@ -296,7 +320,7 @@ describe("structuredUnknownTypeRule", () => {
         },
       ],
     });
-    const [finding] = structuredUnknownTypeRule.run(page);
+    const [finding] = structuredUnknownTypeRule.run(page, signals);
     expect(finding?.severity).toBe("info");
     expect(finding?.context?.[0]?.value).toBe("MadeUp");
   });
@@ -318,12 +342,12 @@ describe("structuredRichResultsRequiredRule", () => {
     const page = makePage({
       jsonLd: [{ "@context": "https://schema.org", "@type": "WebPage" }],
     });
-    expect(structuredRichResultsRequiredRule.run(page)).toEqual([]);
+    expect(structuredRichResultsRequiredRule.run(page, signals)).toEqual([]);
   });
 
   it("passes when all required fields present", () => {
     const page = makePage({ jsonLd: [fullArticle] });
-    const [finding] = structuredRichResultsRequiredRule.run(page);
+    const [finding] = structuredRichResultsRequiredRule.run(page, signals);
     expect(finding?.severity).toBe("pass");
     expect(finding?.id.endsWith("#pass")).toBe(true);
   });
@@ -331,7 +355,7 @@ describe("structuredRichResultsRequiredRule", () => {
   it("emits error finding when headline missing", () => {
     const { headline: _headline, ...missingHeadline } = fullArticle;
     const page = makePage({ jsonLd: [missingHeadline] });
-    const [finding] = structuredRichResultsRequiredRule.run(page);
+    const [finding] = structuredRichResultsRequiredRule.run(page, signals);
     expect(finding?.severity).toBe("error");
     expect(finding?.context?.[0]?.value).toBe("/headline");
     expect(finding?.grep).toBe("/headline");
@@ -341,7 +365,7 @@ describe("structuredRichResultsRequiredRule", () => {
     const page = makePage({
       jsonLd: [{ ...fullArticle, "@type": "NewsArticle" }],
     });
-    const [finding] = structuredRichResultsRequiredRule.run(page);
+    const [finding] = structuredRichResultsRequiredRule.run(page, signals);
     expect(finding?.severity).toBe("pass");
   });
 });
@@ -369,14 +393,14 @@ describe("structuredRichResultsRecommendedRule", () => {
 
   it("passes when all recommended fields present", () => {
     const page = makePage({ jsonLd: [fullArticle] });
-    const [finding] = structuredRichResultsRecommendedRule.run(page);
+    const [finding] = structuredRichResultsRecommendedRule.run(page, signals);
     expect(finding?.severity).toBe("pass");
   });
 
   it("flags missing dateModified as info", () => {
     const { dateModified: _dateModified, ...missingDateModified } = fullArticle;
     const page = makePage({ jsonLd: [missingDateModified] });
-    const [finding] = structuredRichResultsRecommendedRule.run(page);
+    const [finding] = structuredRichResultsRecommendedRule.run(page, signals);
     expect(finding?.severity).toBe("info");
     expect(finding?.context?.[0]?.value).toBe("/dateModified");
     expect(finding?.grep).toBe("/dateModified");
