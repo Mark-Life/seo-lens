@@ -2,61 +2,57 @@
 
 ## What Is This
 
-A browser extension that audits SEO metadata on any webpage. Provides instant, actionable feedback on SEO health — title, meta tags, headings, structured data, and more.
+A browser extension that audits SEO metadata on any webpage. Instant, actionable feedback on SEO health — title, meta tags, headings, structured data, and more. Designed for the AI coding workflow: every finding is copyable as structured plain text for agents like Claude Code, Cursor, or Copilot.
 
-## Target Browsers
+## Current State (shipped)
 
-- **Phase 1**: Chrome (Manifest V3)
-- **Phase 2**: Firefox
-- **Future**: Edge, Safari, and other Chromium-based browsers
+Chrome side panel (WXT + React) with a live audit pipeline driven by the active tab.
 
-## Core Vision
+- **Audit engine** (`packages/seo-rules`) — pure Effect-TS rules engine with branded schemas. Rules cover title, meta description, headings (single H1, skip-level), images alt, structured data (schema.org recognition, rich-results validation, initial recommendations), social OG/Twitter, canonical + robots directives.
+- **Fetched-HTML audits** — the background service worker fetches the active tab's URL and parses the response with `DOMParser`, matching what a crawler sees (not what the rendered DOM accumulates on SPAs). CSR-shell fallback is deferred.
+- **Side panel UI** — three tabs:
+  - *Overview* — overall score, severity counts, per-category scores, Markdown/JSON export.
+  - *Findings* — filterable issue list with per-finding copy (includes grep-able snippets).
+  - *Inspect* — meta, social preview, heading tree, JSON-LD blocks, breadcrumbs, indexing dashboard, image gallery. Images render inline from cross-origin URLs.
+- **Copy-for-AI** — per-finding copy, per-section copy in Inspect, full-report exports.
+- **Reactive triggers** — audits re-run on tab switch, window focus, full load, SPA soft-nav, or manual refresh. Per-tab debouncing via Effect `Queue` + `Stream.groupByKey`.
 
-### SEO Auditing
+Implementation details: see [plan-extension.md](./plan-extension.md).
 
-- Validate page title (length, existence, uniqueness)
-- Validate meta description (length, existence)
-- Heading structure (single H1, proper hierarchy H1 > H2 > H3)
-- Open Graph and Twitter Card completeness
-- Canonical URL validation
-- JSON-LD structured data parsing and validation against schema.org
-- Image alt text coverage
-- Robots/indexing directives detection
-- Internal/external link analysis
-- Overall SEO score with weighted rules
+## Product Direction (next)
 
-### AI-Friendly Output (Key Differentiator)
+The current product audits one page at a time. Next scopes grow it beyond single-page.
 
-Most users today work with AI coding assistants (Claude Code, Cursor, Copilot, etc.). The extension must be designed with this workflow in mind:
+1. **Smarter JSON-LD recommendations.** Detect the kind of page (article, product, homepage, breadcrumb-bearing) and proactively suggest the schema the user should add, not only validate what's already present.
+2. **Site-level static signals.** Fetch `robots.txt`, `sitemap.xml`, `.well-known/security.txt`, and related site-wide files; fold them into the current-page report (e.g., "this page is disallowed in robots.txt", "this page is not in sitemap").
+3. **Manual full-site audit.** User-triggered sampled crawl of the current site from inside the extension. URL-pattern grouping for large/aggregator sites. Site-wide report, copyable for agents.
+4. **Additional interfaces for the core.** Same audits + recommendations via non-browser surfaces — CLI, MCP server, desktop app. Broadly scoped; specific shapes decided per-surface.
 
-- **Copyable text reports**: One-click copy of full SEO audit as structured text (not screenshots, not HTML)
-- **Error list as plain text**: Every issue should be easily copyable — paste directly into an AI chat for fix suggestions
-- **Structured report format**: Machine-readable output (Markdown or structured text) so AI tools can parse and act on it
-- **Future: Agent-compatible API**: Expose audit results in a way that AI agents (Claude MCP plugins, browser automation tools) can consume directly — e.g., via a local API, clipboard format convention, or native messaging
+Per-scope plans: see [plan.md](./plan.md).
 
-### User Experience Goals
+## Target Surfaces
 
-- Zero-config: install and it works
-- Fast: audit runs instantly on page load or on demand
-- Clean UI: popup shows summary score + expandable sections per category
-- Non-intrusive: no content injection into pages unless user opts in
+- **Phase 1 (shipped)**: Chrome extension (Manifest V3), side panel.
+- **Phase 2**: Firefox port.
+- **Future**: Edge, Safari, and non-extension surfaces (CLI, MCP, desktop) per scope 4.
 
 ## Monorepo Structure
 
 ```
 apps/
-  web/          — Landing page / marketing site (Next.js, already scaffolded)
-  extension/    — Chrome extension (to be created)
+  web/          — Landing page (Next.js, scaffolded)
+  extension/    — Chrome extension (WXT + React, shipped)
 packages/
-  seo-rules/    — Core SEO auditing logic (pure functions, shared between extension and potentially web)
-  ui/           — Shared UI components (shadcn/ui, already scaffolded)
+  seo-rules/    — Audit engine: rules, schemas, view-model derivations. Runtime-agnostic Effect-TS. Candidate to rename to `core` as non-extension surfaces come online.
+  ui/           — Shared shadcn/ui components.
 ```
 
-The SEO rules engine lives in `packages/` so it can be:
-- Used by the extension's content script
-- Potentially used server-side (web app, API, CI tool) in the future
+`seo-rules` lives in `packages/` so it can be consumed by the extension today and by a CLI, MCP server, or desktop app later.
 
 ## Related Documents
 
-- [User Stories](./user-stories.md) — what the extension solves from the user's perspective
-
+- [user-stories.md](./user-stories.md) — user-facing problems and their status.
+- [plan.md](./plan.md) — roadmap for the next four scopes.
+- [plan-extension.md](./plan-extension.md) — original implementation plan for the current side-panel product (completed).
+- [json-ld-improvements.md](./json-ld-improvements.md) — JSON-LD validation + initial recommendations spec (shipped).
+- [json-ld-recommendation-review.md](./json-ld-recommendation-review.md) — review notes feeding scope 1.
