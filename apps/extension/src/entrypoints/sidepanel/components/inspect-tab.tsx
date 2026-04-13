@@ -12,7 +12,7 @@ import { AlertTriangle, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
 import { CopyButton } from "./copy-button";
-import { JsonLdTree } from "./jsonld-tree";
+import { buildAllBlocksCopyText, JsonLdTree } from "./jsonld-tree";
 import { SectionLabel } from "./section-label";
 
 const indexingTone: Record<IndexingStatus, string> = {
@@ -91,7 +91,52 @@ export function InspectTab({ page }: InspectTabProps) {
   );
   const images = useMemo(() => deriveImageGallery(page), [page]);
   const headings = page.headings;
-  const jsonldRaw = useMemo(() => JSON.stringify(page.jsonLd, null, 2), [page]);
+  const jsonldRaw = useMemo(
+    () => buildAllBlocksCopyText(jsonldBlocks),
+    [jsonldBlocks]
+  );
+  const indexingText = useMemo(
+    () =>
+      indexing.map((r) => `${r.label}: ${r.value} (${r.source})`).join("\n"),
+    [indexing]
+  );
+  const headingsText = useMemo(
+    () =>
+      headings
+        .map((h) => `${"  ".repeat(h.level - 1)}H${h.level} ${h.text}`)
+        .join("\n"),
+    [headings]
+  );
+  const socialText = useMemo(() => {
+    const fmt = (v: string | null) => v ?? "(not set)";
+    const og = [
+      `og:title: ${fmt(social.og.title)}`,
+      `og:description: ${fmt(social.og.description)}`,
+      `og:image: ${fmt(social.og.image)}`,
+      `og:type: ${fmt(social.og.type)}`,
+      `og:site_name: ${fmt(social.og.siteName)}`,
+    ].join("\n");
+    const tw = [
+      `twitter:card: ${fmt(social.twitter.card)}`,
+      `twitter:title: ${fmt(social.twitter.title)}`,
+      `twitter:description: ${fmt(social.twitter.description)}`,
+      `twitter:image: ${fmt(social.twitter.image)}`,
+      `twitter:site: ${fmt(social.twitter.site)}`,
+      `twitter:creator: ${fmt(social.twitter.creator)}`,
+    ].join("\n");
+    return `# Open Graph\n${og}\n\n# Twitter\n${tw}\n\ndomain: ${fmt(social.domain)}`;
+  }, [social]);
+  const imagesText = useMemo(
+    () =>
+      images
+        .map((img) => {
+          const status = img.missingAlt ? "✗ NO ALT" : "✓";
+          const alt = img.alt ?? "(missing)";
+          return `${status} ${img.filename}\n  src: ${img.src}\n  alt: ${alt}`;
+        })
+        .join("\n\n"),
+    [images]
+  );
 
   return (
     <div className="flex flex-col gap-8 px-5 py-6">
@@ -120,11 +165,14 @@ export function InspectTab({ page }: InspectTabProps) {
 
       {/* INDEXING DASHBOARD */}
       <section>
-        <SectionLabel
-          hint="what bots see"
-          index="02"
-          title="Indexing & robots"
-        />
+        <div className="flex items-center justify-between">
+          <SectionLabel
+            hint="what bots see"
+            index="02"
+            title="Indexing & robots"
+          />
+          <CopyButton label="Copy indexing" payload={indexingText} size="sm" />
+        </div>
         <ul className="mt-3 overflow-hidden rounded-md border border-border bg-card">
           {indexing.map((row, idx) => (
             <li
@@ -159,7 +207,14 @@ export function InspectTab({ page }: InspectTabProps) {
 
       {/* SOCIAL PREVIEW — OG + TWITTER */}
       <section>
-        <SectionLabel hint="OG · Twitter" index="03" title="Social previews" />
+        <div className="flex items-center justify-between">
+          <SectionLabel
+            hint="OG · Twitter"
+            index="03"
+            title="Social previews"
+          />
+          <CopyButton label="Copy social" payload={socialText} size="sm" />
+        </div>
 
         {/* OG preview */}
         <div className="mt-4">
@@ -286,11 +341,14 @@ export function InspectTab({ page }: InspectTabProps) {
 
       {/* HEADING TREE */}
       <section>
-        <SectionLabel
-          hint={`${headings.length} nodes`}
-          index="05"
-          title="Heading hierarchy"
-        />
+        <div className="flex items-center justify-between">
+          <SectionLabel
+            hint={`${headings.length} nodes`}
+            index="05"
+            title="Heading hierarchy"
+          />
+          <CopyButton label="Copy headings" payload={headingsText} size="sm" />
+        </div>
         <ul className="mt-4 flex flex-col gap-1">
           {refreshing &&
             [0, 1, 2].map((i) => (
@@ -345,11 +403,14 @@ export function InspectTab({ page }: InspectTabProps) {
 
       {/* IMAGES */}
       <section>
-        <SectionLabel
-          hint={`${images.length} found`}
-          index="07"
-          title="Images & alt text"
-        />
+        <div className="flex items-center justify-between">
+          <SectionLabel
+            hint={`${images.length} found`}
+            index="07"
+            title="Images & alt text"
+          />
+          <CopyButton label="Copy images" payload={imagesText} size="sm" />
+        </div>
         <ul className="mt-4 grid grid-cols-2 gap-3">
           {refreshing &&
             [0, 1, 2, 3].map((i) => (

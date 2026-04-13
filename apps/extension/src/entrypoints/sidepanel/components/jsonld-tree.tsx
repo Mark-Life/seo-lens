@@ -42,6 +42,20 @@ const nodeToJson = (node: JsonLdNode): unknown => {
 const stringifyNode = (node: JsonLdNode): string =>
   JSON.stringify(nodeToJson(node), null, 2);
 
+export const buildBlockCopyText = (block: JsonLdBlock): string => {
+  const existing = stringifyNode(block.root);
+  const suggestions = block.richResults?.suggestions ?? [];
+  if (suggestions.length === 0) {
+    return existing;
+  }
+  const lines = suggestions.map((s) => `"${s.name}": ""  // ${s.severity}`);
+  return `${existing}\n\n// Recommended fields (not present):\n${lines.join("\n")}`;
+};
+
+export const buildAllBlocksCopyText = (
+  blocks: readonly JsonLdBlock[]
+): string => blocks.map(buildBlockCopyText).join("\n\n---\n\n");
+
 const truncate = (s: string): string =>
   s.length > MAX_STRING_LEN ? `${s.slice(0, MAX_STRING_LEN)}…` : s;
 
@@ -500,11 +514,18 @@ const BlockCard = ({ block }: { readonly block: JsonLdBlock }) => {
         >
           {block.type}
         </span>
-        {block.typeSuggestion && (
-          <span className="ml-auto font-mono text-[9px] text-destructive/90 italic">
-            Did you mean {block.typeSuggestion}?
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {block.typeSuggestion && (
+            <span className="font-mono text-[9px] text-destructive/90 italic">
+              Did you mean {block.typeSuggestion}?
+            </span>
+          )}
+          <CopyButton
+            label={`Copy ${block.type}`}
+            payload={buildBlockCopyText(block)}
+            size="sm"
+          />
+        </div>
       </div>
       {block.richResults && (
         <RichResultsBar

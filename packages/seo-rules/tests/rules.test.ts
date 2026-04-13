@@ -373,11 +373,11 @@ describe("structuredRichResultsRecommendedRule", () => {
     expect(finding?.severity).toBe("pass");
   });
 
-  it("warns when dateModified missing", () => {
+  it("flags missing dateModified as info", () => {
     const { dateModified: _dateModified, ...missingDateModified } = fullArticle;
     const page = makePage({ jsonLd: [missingDateModified] });
     const [finding] = structuredRichResultsRecommendedRule.run(page);
-    expect(finding?.severity).toBe("warning");
+    expect(finding?.severity).toBe("info");
     expect(finding?.context?.[0]?.value).toBe("/dateModified");
     expect(finding?.grep).toBe("/dateModified");
   });

@@ -279,7 +279,7 @@ export const structuredRichResultsRecommendedRule: AuditRule = {
           id: `${recommendedRuleId}#block${i + 1}`,
           ruleId: recommendedRuleId,
           category: "structured",
-          severity: "warning",
+          severity: "info",
           title: `${report.spec} missing recommended fields`,
           message: `block #${i + 1}: ${report.recommendedErrors.length} recommended field${report.recommendedErrors.length === 1 ? "" : "s"} missing for Google ${report.spec} Rich Results.`,
           context,
