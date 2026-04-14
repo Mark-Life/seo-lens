@@ -7,4 +7,5 @@ export const categoryLabels: Record<Category, string> = {
   structured: "Structured data",
   images: "Images",
   indexing: "Indexing",
+  site: "Site-wide",
 };

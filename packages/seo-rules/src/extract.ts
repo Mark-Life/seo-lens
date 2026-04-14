@@ -157,6 +157,42 @@ const extractLinks = (root: ParentNode, url: PageUrl) => {
   });
 };
 
+interface ExtractedHeadLink {
+  href: string;
+  hreflang: string | null;
+  rel: string;
+  title: string | null;
+  type: string | null;
+}
+
+const extractHeadLinks = (
+  doc: Document,
+  url: PageUrl
+): readonly ExtractedHeadLink[] => {
+  const head = doc.head;
+  if (!head) {
+    return [];
+  }
+  const out: ExtractedHeadLink[] = [];
+  for (const link of head.querySelectorAll<HTMLLinkElement>(
+    "link[rel][href]"
+  )) {
+    const rel = link.getAttribute("rel") || "";
+    const rawHref = link.getAttribute("href") || "";
+    if (!(rel && rawHref)) {
+      continue;
+    }
+    out.push({
+      rel,
+      href: toAbsolute(rawHref, url),
+      type: link.getAttribute("type"),
+      title: link.getAttribute("title"),
+      hreflang: link.getAttribute("hreflang"),
+    });
+  }
+  return out;
+};
+
 const extractOpenGraph = (doc: Document, url: PageUrl) => {
   const openGraph: Record<string, string> = {};
   for (const el of doc.querySelectorAll<HTMLMetaElement>(
@@ -217,6 +253,7 @@ export const extractFromDocument = (doc: Document, url: PageUrl): unknown => {
     headings: extractHeadings(root),
     images: extractImages(root, url),
     links: extractLinks(root, url),
+    headLinks: extractHeadLinks(doc, url),
     openGraph: extractOpenGraph(doc, url),
     twitterCard: extractTwitterCard(doc, url),
     jsonLd: extractJsonLd(doc),

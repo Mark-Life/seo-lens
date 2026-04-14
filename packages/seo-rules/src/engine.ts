@@ -7,6 +7,7 @@ import {
   type PageData,
   type PageSignals,
   Score,
+  type SiteSignals,
 } from "./schema";
 import type { AuditRule } from "./types";
 
@@ -16,6 +17,7 @@ const MAX_SCORE = 100;
 export function runAudit(
   page: PageData,
   signals: PageSignals,
+  siteSignals: SiteSignals,
   rules: AuditRule[]
 ): AuditResult {
   const findings: AuditFinding[] = [];
@@ -25,7 +27,7 @@ export function runAudit(
   let earnedWeight = 0;
 
   for (const rule of rules) {
-    const ruleFindings = rule.run(page, signals);
+    const ruleFindings = rule.run(page, signals, siteSignals);
     findings.push(...ruleFindings);
 
     for (const f of ruleFindings) {
@@ -70,6 +72,7 @@ export function runAudit(
     counts: FindingCounts.make(counts),
     categoryScores,
     findings,
+    siteSignals,
     timestamp: Date.now(),
   });
 }

@@ -68,7 +68,9 @@ const ReadyView = ({ page, result, tab, onTabChange }: ReadyViewProps) => (
 
     <main>
       {tab === "overview" && <OverviewTab result={result} />}
-      {tab === "inspect" && <InspectTab page={page} />}
+      {tab === "inspect" && (
+        <InspectTab page={page} siteSignals={result.siteSignals} />
+      )}
     </main>
   </>
 );
