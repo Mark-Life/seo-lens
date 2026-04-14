@@ -1,0 +1,66 @@
+name: Bug report
+description: Report a broken audit, incorrect finding, or UI issue.
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill out the sections below so we can reproduce it quickly.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: The audit reported a missing H1 on a page that has one.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to trigger the bug. Include a URL if the issue is page-specific.
+      placeholder: |
+        1. Open https://example.com
+        2. Open SEO Lens side panel
+        3. Observe finding "…"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Chromium
+        - Brave
+        - Edge
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: macOS 15.3
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output / screenshots
+      description: Paste any relevant console errors or attach screenshots.
+      render: shell

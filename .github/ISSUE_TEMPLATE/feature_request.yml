@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a new audit rule, UI improvement, or integration.
+title: "[feat]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem does this solve? Who hits it?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should SEO Lens behave? Include the shape of any new finding, UI, or export if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - seo-rules (audit engine)
+        - extension UI
+        - site-level signals
+        - full-site crawl
+        - CLI / MCP / other surface
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Links, screenshots, related issues.
