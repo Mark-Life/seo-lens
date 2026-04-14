@@ -24,6 +24,7 @@ import {
   appLayer,
   BrowserApi,
   Extractor,
+  SiteSignalsService,
 } from "@/lib/services";
 
 interface AuditRequest {
@@ -33,6 +34,14 @@ interface AuditRequest {
 
 const SETTLE_DELAY = "1800 millis";
 
+const originOf = (url: string): string => {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return url;
+  }
+};
+
 const auditTab = Effect.fn("Background.auditTab")(function* (
   tabId: TabId,
   reason: string,
@@ -41,6 +50,7 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
   const cache = yield* AuditCache;
   const extractor = yield* Extractor;
   const auditor = yield* Auditor;
+  const siteSignalsService = yield* SiteSignalsService;
   const bus = yield* AuditBus;
 
   yield* bus.publish(tabId, Running.make({ reason }));
@@ -60,7 +70,9 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
       );
       return;
     }
-    const result = yield* auditor.audit(page, signals);
+    const origin = originOf(page.url);
+    const siteSignals = yield* siteSignalsService.get(origin, page);
+    const result = yield* auditor.audit(page, signals, siteSignals);
     yield* cache.set(tabId, { url: page.url, result, at: Date.now() });
     yield* bus.publish(tabId, Ready.make({ page, result }));
     if (page.headings.length === 0 && reason !== "settle") {

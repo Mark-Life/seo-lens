@@ -18,6 +18,7 @@ const makePage = (jsonLd: readonly unknown[]): PageData =>
     headings: [],
     images: [],
     links: [],
+    headLinks: [],
     openGraph: {},
     twitterCard: {},
     jsonLd,

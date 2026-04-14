@@ -209,4 +209,38 @@ describe("extractFromDocument scopes body data to audit root", () => {
     expect(data.canonical).toBe("https://example.com/x");
     expect(data.auditRoot.source).toBe("main");
   });
+
+  it("extracts <link> tags from <head> with resolved absolute hrefs", () => {
+    const doc = parse(
+      `<!doctype html><html><head>
+        <title>T</title>
+        <link rel="alternate" type="application/rss+xml" title="Feed" href="/blog/feed.xml">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="manifest" href="/site.webmanifest">
+        <link rel="alternate" hreflang="en" href="https://example.com/en/">
+      </head><body><main><h1>Body</h1></main></body></html>`
+    );
+    const data = extractFromDocument(doc, url) as {
+      headLinks: ReadonlyArray<{
+        rel: string;
+        href: string;
+        type: string | null;
+        title: string | null;
+        hreflang: string | null;
+      }>;
+    };
+    expect(data.headLinks).toHaveLength(4);
+    const feed = data.headLinks.find(
+      (l) => l.rel === "alternate" && l.type?.includes("rss")
+    );
+    expect(feed?.href).toBe("https://example.com/blog/feed.xml");
+    expect(feed?.title).toBe("Feed");
+    const icon = data.headLinks.find((l) => l.rel === "icon");
+    expect(icon?.href).toBe("https://example.com/favicon.ico");
+    expect(icon?.type).toBe("image/x-icon");
+    const manifest = data.headLinks.find((l) => l.rel === "manifest");
+    expect(manifest?.href).toBe("https://example.com/site.webmanifest");
+    const hreflang = data.headLinks.find((l) => l.hreflang === "en");
+    expect(hreflang?.href).toBe("https://example.com/en/");
+  });
 });

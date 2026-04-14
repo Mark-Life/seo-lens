@@ -47,6 +47,7 @@ const basePage = (overrides: Partial<PageData> = {}): PageData =>
     headings: [],
     images: [],
     links: [],
+    headLinks: [],
     openGraph: {},
     twitterCard: {},
     jsonLd: [],

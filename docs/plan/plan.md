@@ -167,7 +167,9 @@ export const detectPageKind = (
 
 ---
 
-## Scope B — Site-Level Static Signals
+## ✅ Scope B — Site-Level Static Signals
+
+Shipped in [#3](https://github.com/Mark-Life/seo-lens/pull/3).
 
 **Goal:** fold site-wide files (robots.txt, sitemap.xml, security.txt, and similar) into the current-page report so single-page findings reflect site-wide rules.
 
@@ -177,8 +179,15 @@ Today a page may pass all rules while being disallowed in `robots.txt` or absent
 
 - **Fetchers for site-level files**, all same-origin as the active tab:
   - `/robots.txt` — parse `User-agent`, `Disallow`, `Allow`, `Sitemap:` directives.
-  - `/sitemap.xml` (and sitemap-index → child sitemaps) — flat list of URLs.
+  - **Sitemaps** — `/sitemap.xml` plus variants (`/sitemap_index.xml`, `/sitemap-index.xml`, `/sitemap.xml.gz`) and specialized sitemaps (`/news-sitemap.xml`, `/image-sitemap.xml`, `/video-sitemap.xml`). Honor every `Sitemap:` path declared in `robots.txt` — don't hardcode. Follow sitemap-index → child sitemaps.
   - `/.well-known/security.txt` — presence + `Contact`, `Expires`, `Policy` fields.
+  - **Favicon** — `/favicon.ico` plus any `<link rel="icon">` target. Resolvability + content-type check. Google uses favicons in SERP.
+  - **Web app manifest** — `/site.webmanifest`, `/manifest.json`, or path from `<link rel="manifest">`. Parse + surface `name`, `short_name`, `icons`.
+  - **Feeds** — `/feed.xml`, `/rss.xml`, `/atom.xml`, plus any `<link rel="alternate" type="application/(rss|atom)+xml">` target. Resolvability only.
+  - `**/llms.txt`** — emerging standard for LLM crawler guidance. Info-level surface of contents.
+- **Probes** (not static files, but site-level HTTP behavior that catches SEO-killing misconfigurations):
+  - **Soft-404 probe** — fetch a randomized nonexistent path (`/__seo-lens-probe-${nanoid}`); if it returns `200`, the site has soft-404s. Cheapest high-signal check in the scope.
+  - **Canonical host probe** — fetch `http://origin`, `http(s)://www.origin`, and the non-www variant; verify each 301s to one canonical form. Mixed indexing of `www` + apex is a classic duplicate-content failure.
 - **Per-origin cache** in the background, keyed by origin, short TTL (a few minutes). Invalidated on manual refresh.
 - **New rules** that consume the site-level data:
   - `site.robots-disallow` — current URL is disallowed by robots.txt (error).
@@ -186,18 +195,26 @@ Today a page may pass all rules while being disallowed in `robots.txt` or absent
   - `site.sitemap-missing` — no sitemap discoverable at all (info).
   - `site.security-txt-missing` — info level.
   - `site.robots-sitemap-drift` — sitemap referenced in robots.txt doesn't match the sitemap actually found, or vice versa.
-- **New Inspect section "Site-level signals"** — summary of robots.txt, sitemap presence, security.txt presence. Each value copyable.
+  - `site.soft-404` — random-path probe returned `200` instead of `404`/`410` (error).
+  - `site.canonical-host-drift` — `www` and apex both serve `200` without redirecting to a single canonical host (warning).
+  - `site.favicon-missing` — neither `/favicon.ico` nor `<link rel="icon">` resolves (info).
+  - `site.manifest-missing` — no web app manifest discoverable (info).
+  - `site.feed-broken` — a `<link rel="alternate">` feed target fails to resolve (warning).
+- **New Inspect section "Site-level signals"** — summary of robots.txt, sitemaps (all variants found), security.txt, favicon, manifest, feeds, `llms.txt`, and probe results. Each value copyable.
 
 ### Implementation outline
 
-1. New tagged errors in `seo-rules/src/errors.ts`: `RobotsFetchFailed`, `SitemapFetchFailed`, `SecurityTxtFetchFailed`.
-2. New schemas: `RobotsTxt`, `Sitemap`, `SecurityTxt` as `Schema.Class`.
-3. New services in `apps/extension/src/lib/services/`: `RobotsService`, `SitemapService`, `SecurityTxtService`. Each has `get(origin)` returning a cached Effect.
-4. New service `SiteSignals` composing the three above; exposes `get(origin): Effect<SiteSignals>`.
-5. Wire `SiteSignals` into `auditTab` program; pass to rules that need it as an additional input alongside `PageData`.
-6. Extend `AuditResult` (or a parallel `SiteAuditContext`) to carry the site signals so the side panel can render the new Inspect section.
-7. Add `Site-level signals` section component in the Inspect tab; copyable per field.
-8. Tests: table-driven `robots.txt` parser cases, sitemap-index resolution, malformed-input fall-through (must not fail the whole audit).
+1. ✅ New tagged errors in `seo-rules/src/errors.ts`: `RobotsFetchFailed`, `SitemapFetchFailed`, `SecurityTxtFetchFailed`, `ManifestFetchFailed`, `FaviconFetchFailed`, `FeedFetchFailed`, `LlmsTxtFetchFailed`, `HostProbeFailed`.
+2. ✅ New schemas: `RobotsTxt`, `Sitemap`, `SecurityTxt`, `WebManifest`, `Favicon`, `Feed`, `LlmsTxt`, `HostProbeResult`, `SoftFourOhFourProbe` as `Schema.Class`.
+3. ✅ New services in `apps/extension/src/lib/services/`: `RobotsService`, `SitemapService`, `SecurityTxtService`, `FaviconService`, `ManifestService`, `FeedService`, `LlmsTxtService`, `HostProbeService`, `SoftFourOhFourService`. Each has `get(origin)` returning a cached Effect.
+4. ✅ New service `SiteSignals` composing the above; exposes `get(origin): Effect<SiteSignals>`. Sitemap discovery must honor `robots.txt` `Sitemap:` entries first, then fall back to the hardcoded variant list — sequential dependency, run as a single `Effect.gen`.
+5. ✅ Wire `SiteSignals` into `auditTab` program; pass to rules that need it as an additional input alongside `PageData`.
+6. ✅ Extend `AuditResult` (or a parallel `SiteAuditContext`) to carry the site signals so the side panel can render the new Inspect section.
+7. ✅ Add `Site-level signals` section component in the Inspect tab; copyable per field. Group: Crawlers (robots, sitemaps, llms), Host (soft-404, canonical host), Metadata (favicon, manifest, feeds), Security (security.txt).
+8. ✅ Soft-404 probe uses a per-session random slug to defeat caching; cache the *result* per origin so we don't hammer sites on every audit.
+9. ✅ Tests: table-driven `robots.txt` parser cases, sitemap-index resolution, manifest JSON parsing, soft-404 probe with mock fetcher returning 200 vs 404, canonical-host probe across www/apex/http/https permutations, malformed-input fall-through (must not fail the whole audit). Gzipped-sitemap decode and manifest `<link>` discovery from `PageData` are deferred — the current services don't implement gzip decompression or consume `PageData` `<link>` tags, so there's nothing to test yet; revisit alongside those implementations.
+10. ✅ `PageData`-driven feed discovery. Origin-root hardcoded probes miss section-scoped feeds (e.g. `/blog/feed.xml` declared via `<link rel="alternate" type="application/rss+xml">`). Add a `HeadLink` schema class + `headLinks: readonly HeadLink[]` field to `PageData`, populated by `extract.ts` from `<head> link[rel][href]` with absolute href resolution. Thread `PageData` into `SiteSignalsService.get(origin, page)` and `FeedService.get(origin, headLinks)`; filter alternates by `application/(rss|atom)(+xml)?` MIME, prepend to the hardcoded fallback list, dedupe, probe. Include a hint fingerprint in the feed and site-signals cache keys so different pages on the same origin don't collide. Same `PageData`-driven pattern should extend to `FaviconService` (`rel="icon"`) and `ManifestService` (`rel="manifest"`) in a follow-up — the plumbing is now in place.
+11. ✅ Site-level audit rules. Scope B shipped the services and Inspect section, but no rule consumed `siteSignals` — so the data never reached Findings. Added new `"site"` category to `Category` literal and `categoryLabels` map, a pure Google-longest-match `isPathDisallowed` helper in `packages/seo-rules/src/rules/site/robots-matcher.ts`, and ten rules under `packages/seo-rules/src/rules/site/`: `site.robots-disallow` (error, per-page), `site.not-in-sitemap` (warning, per-page, suppressed when noindex or robots-disallowed, with trailing-slash normalization), `site.sitemap-missing` (info), `site.robots-sitemap-drift` (info), `site.soft-404` (error), `site.canonical-host-drift` (warning), `site.security-txt-missing` / `site.favicon-missing` / `site.manifest-missing` (info), and `site.feed-broken` (warning, consumes `page.headLinks`). All rules no-op gracefully on `null`/empty inputs. Rules registered in `defaultRules`; origin-level findings repeat per page by design (deduping deferred). Table-driven tests in `tests/site-rules.test.ts` cover matcher semantics and each rule's positive/negative paths.
 
 ### Considerations
 
@@ -205,6 +222,10 @@ Today a page may pass all rules while being disallowed in `robots.txt` or absent
 - Parse errors must downgrade the rule to `info` with the parse problem surfaced, not fail the whole audit.
 - Sitemap files can be huge. Cap parse size (e.g. 5 MB), truncate the URL list in memory, and switch to a hashed set if large sites cause memory pressure. Full streaming parse can wait.
 - Respect `robots.txt` directives in the fetcher itself — don't crawl paths the site disallows even for our own audit traffic.
+- Soft-404 probe path must be obviously synthetic (`/__seo-lens-probe-`*) so it shows up clearly in server logs and can't collide with real routes. Use `credentials: "omit"` and a short timeout; treat any non-2xx as healthy.
+- Canonical-host probe runs up to four HEAD requests per origin (`http`/`https` × `www`/apex). Cache aggressively — this is per-origin state, not per-page. Use `HEAD` first, fall back to `GET` with `Range: bytes=0-0` for hosts that reject HEAD.
+- Favicon/manifest/feed discovery is *driven by `PageData`* (the `<link>` tags already extracted) plus a hardcoded fallback list. Don't re-scan the DOM inside the service.
+- Gzipped sitemaps require decompression. Use `DecompressionStream('gzip')` — available in service workers without a dep.
 
 ### Out of scope
 

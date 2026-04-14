@@ -4,6 +4,7 @@ import type {
   PageData,
   PageSignals,
   RuleId,
+  SiteSignals,
 } from "./schema";
 
 export interface AuditRule {
@@ -13,7 +14,8 @@ export interface AuditRule {
   readonly name: string;
   readonly run: (
     page: PageData,
-    signals: PageSignals
+    signals: PageSignals,
+    siteSignals?: SiteSignals
   ) => readonly AuditFinding[];
   readonly weight: number;
 }

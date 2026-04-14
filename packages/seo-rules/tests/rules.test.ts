@@ -64,6 +64,7 @@ const makePage = (
     headings: [],
     images: [],
     links: [],
+    headLinks: [],
     openGraph: {},
     twitterCard: {},
     jsonLd: [],

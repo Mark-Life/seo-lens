@@ -5,13 +5,15 @@ import {
   type PageData,
   type PageSignals,
   runAudit,
+  type SiteSignals,
 } from "@workspace/seo-rules";
 import { Context, Effect, Layer } from "effect";
 
 export interface AuditorShape {
   readonly audit: (
     page: PageData,
-    signals: PageSignals
+    signals: PageSignals,
+    siteSignals: SiteSignals
   ) => Effect.Effect<AuditResult, AuditFailed>;
 }
 
@@ -21,10 +23,11 @@ export class Auditor extends Context.Tag("Auditor")<Auditor, AuditorShape>() {
     Auditor.of({
       audit: Effect.fn("Auditor.audit")(function* (
         page: PageData,
-        signals: PageSignals
+        signals: PageSignals,
+        siteSignals: SiteSignals
       ) {
         return yield* Effect.try({
-          try: () => runAudit(page, signals, [...defaultRules]),
+          try: () => runAudit(page, signals, siteSignals, [...defaultRules]),
           catch: (cause) =>
             new AuditFailed({ ruleId: "engine.internal", cause }),
         });
@@ -33,15 +36,18 @@ export class Auditor extends Context.Tag("Auditor")<Auditor, AuditorShape>() {
   );
 
   static readonly testLayer = (
-    impl: (page: PageData, signals: PageSignals) => AuditResult = (
-      page,
-      signals
-    ) => runAudit(page, signals, [...defaultRules])
+    impl: (
+      page: PageData,
+      signals: PageSignals,
+      siteSignals: SiteSignals
+    ) => AuditResult = (page, signals, siteSignals) =>
+      runAudit(page, signals, siteSignals, [...defaultRules])
   ) =>
     Layer.succeed(
       Auditor,
       Auditor.of({
-        audit: (page, signals) => Effect.sync(() => impl(page, signals)),
+        audit: (page, signals, siteSignals) =>
+          Effect.sync(() => impl(page, signals, siteSignals)),
       })
     );
 }

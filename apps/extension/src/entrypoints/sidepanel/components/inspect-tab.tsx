@@ -7,6 +7,7 @@ import {
   deriveSocialView,
   type IndexingStatus,
   type PageData,
+  type SiteSignals,
 } from "@workspace/seo-rules";
 import { AlertTriangle, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -14,6 +15,7 @@ import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
 import { CopyButton } from "./copy-button";
 import { buildAllBlocksCopyText, JsonLdTree } from "./jsonld-tree";
 import { SectionLabel } from "./section-label";
+import { SiteSignalsSection } from "./site-signals-section";
 
 const indexingTone: Record<IndexingStatus, string> = {
   ok: "bg-primary",
@@ -77,9 +79,10 @@ function MetaRow({ k, v }: { k: string; v: string | null }) {
 
 interface InspectTabProps {
   readonly page: PageData;
+  readonly siteSignals: SiteSignals;
 }
 
-export function InspectTab({ page }: InspectTabProps) {
+export function InspectTab({ page, siteSignals }: InspectTabProps) {
   const refreshing = useIsRefreshing();
   const meta = useMemo(() => deriveMetaView(page), [page]);
   const indexing = useMemo(() => deriveIndexingView(page), [page]);
@@ -227,7 +230,7 @@ export function InspectTab({ page }: InspectTabProps) {
             </span>
           </div>
           <div className="overflow-hidden rounded-md border border-border bg-card">
-            <div className="relative aspect-[1200/630] w-full bg-gradient-to-br from-primary/15 via-muted to-secondary/15">
+            <div className="relative aspect-1200/630 w-full bg-linear-to-br from-primary/15 via-muted to-secondary/15">
               <div className="grain absolute inset-0" />
               {!refreshing && <RemoteImage alt="" src={social.og.image} />}
             </div>
@@ -262,7 +265,7 @@ export function InspectTab({ page }: InspectTabProps) {
             </span>
           </div>
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <div className="relative aspect-[2/1] w-full bg-gradient-to-br from-secondary/15 via-muted to-primary/15">
+            <div className="relative aspect-2/1 w-full bg-linear-to-br from-secondary/15 via-muted to-primary/15">
               <div className="grain absolute inset-0" />
               {!refreshing && <RemoteImage alt="" src={social.twitter.image} />}
             </div>
@@ -401,6 +404,11 @@ export function InspectTab({ page }: InspectTabProps) {
 
       <div className="rule-hair" />
 
+      {/* SITE-LEVEL SIGNALS */}
+      <SiteSignalsSection siteSignals={siteSignals} />
+
+      <div className="rule-hair" />
+
       {/* IMAGES */}
       <section>
         <div className="flex items-center justify-between">
@@ -423,7 +431,7 @@ export function InspectTab({ page }: InspectTabProps) {
           {!refreshing &&
             images.map((img, idx) => (
               <li className="flex flex-col gap-1.5" key={`${img.src}-${idx}`}>
-                <div className="relative aspect-square overflow-hidden rounded-md border border-border bg-gradient-to-br from-muted to-card">
+                <div className="relative aspect-square overflow-hidden rounded-md border border-border bg-linear-to-br from-muted to-card">
                   <RemoteImage
                     alt={img.alt ?? ""}
                     iconSize="size-5"
