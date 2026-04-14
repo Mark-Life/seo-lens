@@ -6,7 +6,6 @@ export default defineConfig({
   manifest: {
     name: "SEO Lens",
     description: "Instant SEO auditing for any webpage",
-    version: "0.0.1",
     permissions: ["activeTab", "sidePanel", "tabs", "webNavigation"],
     host_permissions: ["<all_urls>"],
     side_panel: {
