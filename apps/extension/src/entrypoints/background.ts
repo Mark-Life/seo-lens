@@ -5,7 +5,7 @@ import {
   Restricted,
   Running,
   TabId,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/schema";
 import {
   Effect,
   Fiber,

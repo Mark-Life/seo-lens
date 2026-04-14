@@ -1,4 +1,4 @@
-import { PageUrl, SoftFourOhFourProbe } from "@workspace/seo-rules";
+import { PageUrl, SoftFourOhFourProbe } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer } from "effect";
 import {
   makeOriginCache,

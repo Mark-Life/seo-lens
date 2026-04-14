@@ -1,10 +1,8 @@
 import {
   extractFromDocument,
   extractPageSignals,
-  PageData,
-  PageSignals,
-  PageUrl,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/extract";
+import { PageData, PageSignals, PageUrl } from "@workspace/seo-rules/schema";
 import { Either, Schema } from "effect";
 
 const decodePageData = Schema.decodeUnknownEither(PageData);

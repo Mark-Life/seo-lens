@@ -1,9 +1,9 @@
 import {
   NoActiveTab,
   RestrictedUrl,
-  TabId,
   TabNotReady,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/errors";
+import { TabId } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Stream } from "effect";
 
 export interface TabInfo {

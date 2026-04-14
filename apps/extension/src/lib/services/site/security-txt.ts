@@ -1,9 +1,6 @@
 import { HttpClient } from "@effect/platform";
-import {
-  PageUrl,
-  SecurityTxt,
-  SecurityTxtFetchFailed,
-} from "@workspace/seo-rules";
+import { SecurityTxtFetchFailed } from "@workspace/seo-rules/errors";
+import { PageUrl, SecurityTxt } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Option } from "effect";
 import { fetchTextOption, SiteHttpClientLayer } from "./http";
 import {

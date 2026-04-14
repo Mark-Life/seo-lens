@@ -1,12 +1,12 @@
 import { HttpClient } from "@effect/platform";
+import { SitemapFetchFailed } from "@workspace/seo-rules/errors";
 import {
   PageUrl,
   Sitemap,
   SitemapEntry,
-  SitemapFetchFailed,
   type SitemapKind,
   type SitemapVariant,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Option } from "effect";
 import { buildGet, isNotFound, isOk, SiteHttpClientLayer } from "./http";
 import {

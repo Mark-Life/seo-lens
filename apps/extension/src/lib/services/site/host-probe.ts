@@ -1,10 +1,10 @@
+import { HostProbeFailed } from "@workspace/seo-rules/errors";
 import {
-  HostProbeFailed,
   HostProbeResult,
   type HostProbeScheme,
   HostProbeVariant,
   PageUrl,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer } from "effect";
 import {
   makeOriginCache,

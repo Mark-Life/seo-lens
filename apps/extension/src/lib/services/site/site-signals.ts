@@ -12,7 +12,7 @@ import {
   SiteSignals,
   type SoftFourOhFourProbe,
   type WebManifest,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Option } from "effect";
 import { FaviconService } from "./favicon";
 import { FeedService } from "./feed";

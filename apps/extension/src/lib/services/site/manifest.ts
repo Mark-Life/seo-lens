@@ -1,10 +1,10 @@
 import { HttpClient } from "@effect/platform";
+import { ManifestFetchFailed } from "@workspace/seo-rules/errors";
 import {
-  ManifestFetchFailed,
   ManifestIcon,
   PageUrl,
   WebManifest,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Option } from "effect";
 import { fetchTextOption, SiteHttpClientLayer } from "./http";
 import {

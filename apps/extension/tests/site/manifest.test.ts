@@ -1,4 +1,4 @@
-import { PageUrl } from "@workspace/seo-rules";
+import { PageUrl } from "@workspace/seo-rules/schema";
 import { describe, expect, it } from "vitest";
 import { parseWebManifest } from "../../src/lib/services/site/manifest";
 

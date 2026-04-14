@@ -1,10 +1,6 @@
 import { HttpClient } from "@effect/platform";
-import {
-  PageUrl,
-  RobotsFetchFailed,
-  RobotsGroup,
-  RobotsTxt,
-} from "@workspace/seo-rules";
+import { RobotsFetchFailed } from "@workspace/seo-rules/errors";
+import { PageUrl, RobotsGroup, RobotsTxt } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Option } from "effect";
 import { buildGet, isNotFound, isOk, SiteHttpClientLayer } from "./http";
 import {

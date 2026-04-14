@@ -6,7 +6,7 @@ import type {
   JsonLdObjectNode,
   JsonLdPrimitiveNode,
   RichResultsReport,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/view";
 import { ChevronRight, Plus } from "lucide-react";
 import { useState } from "react";
 import { CopyButton } from "./copy-button";

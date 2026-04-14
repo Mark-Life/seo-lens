@@ -1,4 +1,4 @@
-import { AuditState, Idle } from "@workspace/seo-rules";
+import { AuditState, Idle } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Schema, Stream } from "effect";
 import type { Browser } from "wxt/browser";
 

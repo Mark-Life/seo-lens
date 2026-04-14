@@ -1,5 +1,6 @@
 import { HttpClient } from "@effect/platform";
-import { LlmsTxt, LlmsTxtFetchFailed, PageUrl } from "@workspace/seo-rules";
+import { LlmsTxtFetchFailed } from "@workspace/seo-rules/errors";
+import { LlmsTxt, PageUrl } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Option } from "effect";
 import { fetchTextOption, SiteHttpClientLayer } from "./http";
 import {

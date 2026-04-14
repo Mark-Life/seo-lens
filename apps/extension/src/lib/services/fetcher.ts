@@ -3,7 +3,8 @@ import {
   HttpClient,
   HttpClientRequest,
 } from "@effect/platform";
-import { FetchFailed, type PageUrl } from "@workspace/seo-rules";
+import { FetchFailed } from "@workspace/seo-rules/errors";
+import type { PageUrl } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer } from "effect";
 
 export interface FetcherShape {

@@ -9,7 +9,7 @@ import type {
   SiteSignals,
   SoftFourOhFourProbe,
   WebManifest,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/schema";
 import type { ReactNode } from "react";
 import { CopyButton } from "./copy-button";
 import { SectionLabel } from "./section-label";

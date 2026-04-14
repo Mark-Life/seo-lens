@@ -1,12 +1,12 @@
-import {
-  AuditFailed,
-  type AuditResult,
-  defaultRules,
-  type PageData,
-  type PageSignals,
-  runAudit,
-  type SiteSignals,
-} from "@workspace/seo-rules";
+import { defaultRules } from "@workspace/seo-rules";
+import { runAudit } from "@workspace/seo-rules/engine";
+import { AuditFailed } from "@workspace/seo-rules/errors";
+import type {
+  AuditResult,
+  PageData,
+  PageSignals,
+  SiteSignals,
+} from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer } from "effect";
 
 export interface AuditorShape {

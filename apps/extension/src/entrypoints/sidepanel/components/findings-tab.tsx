@@ -1,4 +1,4 @@
-import type { AuditFinding, Severity } from "@workspace/seo-rules";
+import type { AuditFinding, Severity } from "@workspace/seo-rules/schema";
 import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import { categoryLabels } from "../lib/labels";

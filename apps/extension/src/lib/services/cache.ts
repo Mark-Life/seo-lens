@@ -1,4 +1,4 @@
-import type { AuditResult, TabId } from "@workspace/seo-rules";
+import type { AuditResult, TabId } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Option } from "effect";
 
 export interface CacheEntry {

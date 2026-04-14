@@ -1,6 +1,7 @@
 import { FetchHttpClient } from "@effect/platform";
 import { describe, expect, it } from "@effect/vitest";
-import { FetchFailed, PageUrl } from "@workspace/seo-rules";
+import { FetchFailed } from "@workspace/seo-rules/errors";
+import { PageUrl } from "@workspace/seo-rules/schema";
 import { Effect, Either, Fiber, Layer, TestClock } from "effect";
 import { Fetcher } from "../src/lib/services/fetcher";
 

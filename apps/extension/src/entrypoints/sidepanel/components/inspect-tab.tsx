@@ -1,3 +1,4 @@
+import type { PageData, SiteSignals } from "@workspace/seo-rules/schema";
 import {
   deriveBreadcrumbs,
   deriveImageGallery,
@@ -6,9 +7,7 @@ import {
   deriveMetaView,
   deriveSocialView,
   type IndexingStatus,
-  type PageData,
-  type SiteSignals,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/view";
 import { AlertTriangle, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataSlot, useIsRefreshing } from "../lib/refresh-context";

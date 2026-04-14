@@ -1,4 +1,4 @@
-import { type AuditState, Idle } from "@workspace/seo-rules";
+import { type AuditState, Idle } from "@workspace/seo-rules/schema";
 import { Effect, Fiber, Stream } from "effect";
 import { useCallback, useEffect, useState } from "react";
 import { useRuntime } from "@/lib/runtime";

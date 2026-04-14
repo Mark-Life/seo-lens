@@ -1,4 +1,4 @@
-import type { AuditResult } from "@workspace/seo-rules";
+import type { AuditResult } from "@workspace/seo-rules/schema";
 import { categoryLabels } from "../lib/labels";
 import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
 import { CopyButton } from "./copy-button";

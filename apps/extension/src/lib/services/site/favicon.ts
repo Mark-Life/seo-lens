@@ -1,5 +1,6 @@
 import { HttpClient } from "@effect/platform";
-import { Favicon, FaviconFetchFailed, PageUrl } from "@workspace/seo-rules";
+import { FaviconFetchFailed } from "@workspace/seo-rules/errors";
+import { Favicon, PageUrl } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Option } from "effect";
 import { headOrNone, SiteHttpClientLayer } from "./http";
 import {

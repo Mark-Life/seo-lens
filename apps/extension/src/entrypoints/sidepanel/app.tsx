@@ -1,8 +1,11 @@
-import type { AuditResult, AuditState, PageData } from "@workspace/seo-rules";
+import type {
+  AuditResult,
+  AuditState,
+  PageData,
+} from "@workspace/seo-rules/schema";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Header } from "./components/header";
-import { InspectTab } from "./components/inspect-tab";
 import { OverviewTab } from "./components/overview-tab";
 import { ErrorState } from "./components/states/error";
 import { LoadingState } from "./components/states/loading";
@@ -10,6 +13,10 @@ import { RestrictedState } from "./components/states/restricted";
 import { useAuditState } from "./hooks/use-audit-state";
 import { usePersistentTab } from "./hooks/use-persistent-tab";
 import { RefreshProvider } from "./lib/refresh-context";
+
+const InspectTab = lazy(() =>
+  import("./components/inspect-tab").then((m) => ({ default: m.InspectTab }))
+);
 
 type TabKey = "overview" | "inspect";
 
@@ -69,7 +76,9 @@ const ReadyView = ({ page, result, tab, onTabChange }: ReadyViewProps) => (
     <main>
       {tab === "overview" && <OverviewTab result={result} />}
       {tab === "inspect" && (
-        <InspectTab page={page} siteSignals={result.siteSignals} />
+        <Suspense fallback={<LoadingState />}>
+          <InspectTab page={page} siteSignals={result.siteSignals} />
+        </Suspense>
       )}
     </main>
   </>

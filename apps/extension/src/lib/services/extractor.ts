@@ -1,11 +1,9 @@
 import {
   ExtractionFailed,
-  PageData,
-  PageSignals,
   type RestrictedUrl,
-  type TabId,
   type TabNotReady,
-} from "@workspace/seo-rules";
+} from "@workspace/seo-rules/errors";
+import { PageData, PageSignals, type TabId } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Schema } from "effect";
 import { BrowserApi } from "./browser-api";
 

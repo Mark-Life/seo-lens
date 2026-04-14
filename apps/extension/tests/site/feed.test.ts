@@ -1,4 +1,4 @@
-import { HeadLink } from "@workspace/seo-rules";
+import { HeadLink } from "@workspace/seo-rules/schema";
 import { describe, expect, it } from "vitest";
 import {
   hintsFromHeadLinks,

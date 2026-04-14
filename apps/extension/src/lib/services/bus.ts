@@ -1,4 +1,4 @@
-import { type AuditState, Idle, type TabId } from "@workspace/seo-rules";
+import { type AuditState, Idle, type TabId } from "@workspace/seo-rules/schema";
 import { Context, Effect, Layer, Stream, SubscriptionRef } from "effect";
 
 export interface AuditBusShape {
