@@ -1,64 +1,75 @@
-# Next.js Monorepo Template
+# SEO Lens
 
-A turborepo-based monorepo template with Next.js, shadcn/ui, and strict code quality via Ultracite.
+Browser extension that audits SEO metadata on any webpage. Instant, actionable feedback on title, meta tags, headings, structured data, and more — with every finding copyable as structured plain text for AI coding agents (Claude Code, Cursor, Copilot).
 
-## What's Inside
+## Features
 
-- `apps/web` — Next.js application
-- `packages/ui` — shared shadcn/ui component library
-- `packages/typescript-config` — shared TypeScript configs
+- **Live audit pipeline** driven by the active tab. Re-runs on tab switch, window focus, full load, SPA soft-nav, or manual refresh.
+- **Crawler-accurate fetch.** Background service worker fetches the active tab's URL and parses with `DOMParser`, matching what a crawler sees (not the rendered SPA DOM).
+- **Rules coverage.** Title, meta description, headings (single H1, skip-level), image alt, structured data (schema.org recognition, rich-results validation, recommendations), social OG/Twitter, canonical, robots directives.
+- **Side panel UI** with three tabs:
+  - *Overview* — overall score, severity counts, per-category scores, Markdown/JSON export.
+  - *Findings* — filterable issue list with per-finding copy (grep-able snippets).
+  - *Inspect* — meta, social preview, heading tree, JSON-LD blocks, breadcrumbs, indexing dashboard, image gallery.
+- **Copy-for-AI.** Per-finding copy, per-section copy in Inspect, full-report exports.
+
+## Monorepo
+
+```
+apps/
+  extension/    Chrome extension (WXT + React, shipped)
+  web/          Landing page (Next.js, scaffolded)
+packages/
+  seo-rules/    Audit engine — rules, schemas, view-model derivations (Effect-TS, runtime-agnostic)
+  ui/           Shared shadcn/ui components
+  api/          API package
+  env/          Environment config
+  typescript-config/
+```
+
+`seo-rules` is runtime-agnostic so it can power non-extension surfaces (CLI, MCP server, desktop) later.
 
 ## Stack
 
-- **Runtime**: Bun
-- **Build**: Turborepo
-- **Linting/Formatting**: Ultracite (Biome)
-- **UI**: shadcn/ui + Tailwind CSS
-- **Pre-commit**: Husky + Ultracite
+- TypeScript, Bun, Turborepo
+- Effect-TS (rules engine, schemas, streams)
+- WXT + React 19 (extension)
+- Tailwind v4, shadcn/ui
+- Vitest, Biome / Ultracite
 
-## Create a New Project
-
-Using GitHub CLI:
+## Development
 
 ```bash
-gh repo create my-app --template Mark-Life/netxjs-monorepo --private --clone
-cd my-app
 bun install
-bun run upgrade
+bun run dev           # all apps via turbo
+bun run test          # NOT `bun test` — use `bun run test`
+bun run typecheck
+bun run lint
 ```
 
-Or from GitHub UI: click **"Use this template"** > **"Create a new repository"**, then:
+Extension-only:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/my-app.git
-cd my-app
-bun install
-bun run upgrade
+cd apps/extension
+bun run dev           # launches WXT dev build
+bun run build
+bun run zip           # packaged .zip for Chrome Web Store
 ```
 
-The `upgrade` command updates Next.js, refreshes all shadcn/ui components, updates dependencies, and runs lint fixes.
+Load the unpacked dev build from `apps/extension/.output/chrome-mv3` in `chrome://extensions`.
 
-## Commands
+## Roadmap
 
-| Command | Description |
-| --- | --- |
-| `bun dev` | Start all apps in dev mode |
-| `bun run build` | Build all apps and packages |
-| `bun run lint` | Lint all apps and packages |
-| `bun run fix` | Auto-fix formatting and lint issues |
-| `bun run check` | Check for lint/format issues |
-| `bun run upgrade` | Upgrade Next.js, shadcn/ui, and all deps |
+1. Manual full-site audit — user-triggered sampled crawl with URL-pattern grouping, copyable site-wide report.
+2. Additional interfaces — CLI, MCP server, desktop app sharing the same core.
 
-## Adding Components
+Phase 2 targets Firefox; Edge and Safari later.
 
-Add shadcn/ui components to the shared `ui` package:
+## Documentation
 
-```bash
-bunx shadcn@latest add button -c packages/ui
-```
+- [docs/plan/context.md](./docs/plan/context.md) — project context
+- [docs/plan/plan.md](./docs/plan/plan.md) — roadmap
+- [docs/plan/plan-extension.md](./docs/plan/plan-extension.md) — shipped extension plan
+- [docs/plan/user-stories.md](./docs/plan/user-stories.md)
+- [docs/plan/json-ld-improvements.md](./docs/plan/json-ld-improvements.md)
 
-Then import from `@workspace/ui`:
-
-```tsx
-import { Button } from "@workspace/ui/components/button"
-```
