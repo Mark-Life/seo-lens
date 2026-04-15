@@ -37,21 +37,22 @@ const queryActiveTabId = async (): Promise<number | null> => {
 
 const make = Effect.sync((): PanelClientShape => {
   let activePort: Browser.runtime.Port | null = null;
+  let disposed = false;
+
+  const sendHello = (port: Browser.runtime.Port) => {
+    queryActiveTabId().then((tabId) => {
+      if (tabId != null) {
+        try {
+          port.postMessage({ type: "hello", tabId });
+        } catch {
+          // port closed
+        }
+      }
+    });
+  };
 
   const states = Stream.asyncPush<AuditState>((emit) =>
     Effect.sync(() => {
-      const port = browser.runtime.connect({ name: "sidepanel" });
-      activePort = port;
-      queryActiveTabId().then((tabId) => {
-        if (tabId != null) {
-          try {
-            port.postMessage({ type: "hello", tabId });
-          } catch {
-            // port closed
-          }
-        }
-      });
-
       const onMessage = (msg: unknown) => {
         if (
           typeof msg === "object" &&
@@ -65,23 +66,56 @@ const make = Effect.sync((): PanelClientShape => {
         }
       };
 
-      const onDisconnect = () => {
-        emit.single(idleState());
+      const detach = (port: Browser.runtime.Port) => {
+        port.onMessage.removeListener(onMessage);
       };
 
-      port.onMessage.addListener(onMessage);
-      port.onDisconnect.addListener(onDisconnect);
+      const connect = (attempt: number) => {
+        if (disposed) {
+          return;
+        }
+        let port: Browser.runtime.Port;
+        try {
+          port = browser.runtime.connect({ name: "sidepanel" });
+        } catch {
+          // SW may be momentarily unavailable while restarting; retry.
+          const delay = Math.min(1000, 50 * 2 ** attempt);
+          setTimeout(() => connect(attempt + 1), delay);
+          return;
+        }
+        activePort = port;
+
+        const onDisconnect = () => {
+          detach(port);
+          if (activePort === port) {
+            activePort = null;
+          }
+          // SW died; clear UI to loading state until reconnect lands a fresh audit.
+          emit.single(idleState());
+          if (!disposed) {
+            const delay = Math.min(1000, 50 * 2 ** attempt);
+            setTimeout(() => connect(attempt + 1), delay);
+          }
+        };
+
+        port.onMessage.addListener(onMessage);
+        port.onDisconnect.addListener(onDisconnect);
+        sendHello(port);
+      };
+
+      connect(0);
 
       return Effect.sync(() => {
-        port.onMessage.removeListener(onMessage);
-        port.onDisconnect.removeListener(onDisconnect);
-        try {
-          port.disconnect();
-        } catch {
-          // already disconnected
-        }
-        if (activePort === port) {
-          activePort = null;
+        disposed = true;
+        const port = activePort;
+        activePort = null;
+        if (port) {
+          detach(port);
+          try {
+            port.disconnect();
+          } catch {
+            // already disconnected
+          }
         }
       });
     })
