@@ -7,11 +7,10 @@ Browser extension that audits SEO metadata on any webpage. Instant, actionable f
 - **Live audit pipeline** driven by the active tab. Re-runs on tab switch, window focus, full load, SPA soft-nav, or manual refresh.
 - **Crawler-accurate fetch.** Background service worker fetches the active tab's URL and parses with `DOMParser`, matching what a crawler sees (not the rendered SPA DOM).
 - **Rules coverage.** Title, meta description, headings (single H1, skip-level), image alt, structured data (schema.org recognition, rich-results validation, recommendations), social OG/Twitter, canonical, robots directives.
-- **Side panel UI** with three tabs:
-  - *Overview* — overall score, severity counts, per-category scores, Markdown/JSON export.
-  - *Findings* — filterable issue list with per-finding copy (grep-able snippets).
-  - *Inspect* — meta, social preview, heading tree, JSON-LD blocks, breadcrumbs, indexing dashboard, image gallery.
-- **Copy-for-AI.** Per-finding copy, per-section copy in Inspect, full-report exports.
+- **Side panel UI** with two tabs:
+  - *Audit* — overall score, severity counts, per-category scores, filterable findings list with per-finding copy (grep-able snippets), share-as-image card, Markdown/JSON export.
+  - *Metadata* — meta, social preview, heading tree, JSON-LD blocks, breadcrumbs, indexing dashboard, site-level signals, image gallery.
+- **Copy-for-AI.** Per-finding copy, per-section copy in Metadata, full-report exports.
 
 ## Monorepo
 

@@ -10,11 +10,10 @@ Chrome side panel (WXT + React) with a live audit pipeline driven by the active 
 
 - **Audit engine** (`packages/seo-rules`) — pure Effect-TS rules engine with branded schemas. Rules cover title, meta description, headings (single H1, skip-level), images alt, structured data (schema.org recognition, rich-results validation, initial recommendations), social OG/Twitter, canonical + robots directives.
 - **Fetched-HTML audits** — the background service worker fetches the active tab's URL and parses the response with `DOMParser`, matching what a crawler sees (not what the rendered DOM accumulates on SPAs). CSR-shell fallback is deferred.
-- **Side panel UI** — three tabs:
-  - *Overview* — overall score, severity counts, per-category scores, Markdown/JSON export.
-  - *Findings* — filterable issue list with per-finding copy (includes grep-able snippets).
-  - *Inspect* — meta, social preview, heading tree, JSON-LD blocks, breadcrumbs, indexing dashboard, image gallery. Images render inline from cross-origin URLs.
-- **Copy-for-AI** — per-finding copy, per-section copy in Inspect, full-report exports.
+- **Side panel UI** — two tabs:
+  - *Audit* — overall score, severity counts, per-category scores, filterable findings list with per-finding copy (includes grep-able snippets), share-as-image card, Markdown/JSON export.
+  - *Metadata* — meta, social preview, heading tree, JSON-LD blocks, breadcrumbs, indexing dashboard, site-level signals, image gallery. Images render inline from cross-origin URLs.
+- **Copy-for-AI** — per-finding copy, per-section copy in Metadata, full-report exports.
 - **Reactive triggers** — audits re-run on tab switch, window focus, full load, SPA soft-nav, or manual refresh. Per-tab debouncing via Effect `Queue` + `Stream.groupByKey`.
 
 Implementation details: see [plan-extension.md](./plan-extension.md).

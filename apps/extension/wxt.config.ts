@@ -7,8 +7,11 @@ export default defineConfig({
     server: { port: 3001 },
   },
   manifest: {
-    name: "SEO Lens",
-    description: "Instant SEO auditing for any webpage",
+    name: "SEO Lens — SEO audit for AI coding",
+    short_name: "SEO Lens",
+    description:
+      "Instant SEO audit in the side panel: metadata, headings, JSON-LD, social tags. Copy findings straight into your AI coding agent.",
+    homepage_url: "https://www.seo-lens.dev",
     permissions: ["activeTab", "sidePanel", "tabs", "webNavigation"],
     host_permissions: ["<all_urls>"],
     side_panel: {
