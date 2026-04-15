@@ -1,10 +1,24 @@
-import type { AuditResult } from "@workspace/seo-rules/schema";
+import type { AuditResult, PageData } from "@workspace/seo-rules/shapes";
+import { Share2 } from "lucide-react";
+import { lazy, Suspense, useState } from "react";
 import { categoryLabels } from "../lib/labels";
 import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
 import { CopyButton } from "./copy-button";
 import { FindingsSection, reportToText } from "./findings-tab";
 import { ScoreGauge } from "./score-gauge";
 import { SectionLabel } from "./section-label";
+
+const ShareModal = lazy(() =>
+  import("../features/share/share-modal").then((m) => ({
+    default: m.ShareModal,
+  }))
+);
+
+const ShareErrorBoundary = lazy(() =>
+  import("../features/share/error-boundary").then((m) => ({
+    default: m.ShareErrorBoundary,
+  }))
+);
 
 const SEVERITY_ITEMS = [
   {
@@ -38,16 +52,29 @@ const SEVERITY_ITEMS = [
 ] as const;
 
 interface OverviewTabProps {
+  readonly page: PageData;
   readonly result: AuditResult;
 }
 
-export function OverviewTab({ result }: OverviewTabProps) {
+export function OverviewTab({ result, page }: OverviewTabProps) {
   const refreshing = useIsRefreshing();
+  const [shareOpen, setShareOpen] = useState(false);
   return (
     <div className="flex flex-col gap-7 px-5 py-6">
       {/* GAUGE */}
       <section>
-        <SectionLabel hint="Live" index="01" title="The reading" />
+        <div className="flex items-center justify-between gap-2">
+          <SectionLabel hint="Live" index="01" title="The reading" />
+          <button
+            aria-label="Share as image"
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm border border-transparent text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground"
+            disabled={refreshing}
+            onClick={() => setShareOpen(true)}
+            type="button"
+          >
+            <Share2 className="size-3.5" />
+          </button>
+        </div>
         <div className="mt-4">
           {refreshing ? (
             <DataSlot className="h-24 w-full rounded-md" />
@@ -56,6 +83,19 @@ export function OverviewTab({ result }: OverviewTabProps) {
           )}
         </div>
       </section>
+
+      {shareOpen && (
+        <Suspense fallback={null}>
+          <ShareErrorBoundary onReset={() => setShareOpen(false)}>
+            <ShareModal
+              onOpenChange={setShareOpen}
+              open={shareOpen}
+              page={page}
+              result={result}
+            />
+          </ShareErrorBoundary>
+        </Suspense>
+      )}
 
       <div className="rule-hair" />
 

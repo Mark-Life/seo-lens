@@ -1,4 +1,4 @@
-import type { PageData, SiteSignals } from "@workspace/seo-rules/schema";
+import type { PageData, SiteSignals } from "@workspace/seo-rules/shapes";
 import {
   deriveBreadcrumbs,
   deriveImageGallery,

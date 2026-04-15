@@ -1,8 +1,9 @@
+import { loadSchemaVocab } from "@workspace/seo-rules/generated/schema-vocab";
 import type {
   AuditResult,
   AuditState,
   PageData,
-} from "@workspace/seo-rules/schema";
+} from "@workspace/seo-rules/shapes";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Header } from "./components/header";
@@ -14,8 +15,20 @@ import { useAuditState } from "./hooks/use-audit-state";
 import { usePersistentTab } from "./hooks/use-persistent-tab";
 import { RefreshProvider } from "./lib/refresh-context";
 
+const fetchSchemaVocab = async () => {
+  const url = browser.runtime.getURL("/schema-vocab.json");
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to load schema-vocab.json: ${res.status}`);
+  }
+  return res.json();
+};
+
 const InspectTab = lazy(() =>
-  import("./components/inspect-tab").then((m) => ({ default: m.InspectTab }))
+  Promise.all([
+    import("./components/inspect-tab"),
+    loadSchemaVocab(fetchSchemaVocab),
+  ]).then(([m]) => ({ default: m.InspectTab }))
 );
 
 type TabKey = "overview" | "inspect";
@@ -74,7 +87,7 @@ const ReadyView = ({ page, result, tab, onTabChange }: ReadyViewProps) => (
     </nav>
 
     <main>
-      {tab === "overview" && <OverviewTab result={result} />}
+      {tab === "overview" && <OverviewTab page={page} result={result} />}
       {tab === "inspect" && (
         <Suspense fallback={<LoadingState />}>
           <InspectTab page={page} siteSignals={result.siteSignals} />
