@@ -1,8 +1,22 @@
-import { AuditState, Idle } from "@workspace/seo-rules/schema";
-import { Context, Effect, Layer, Schema, Stream } from "effect";
+import type { AuditState } from "@workspace/seo-rules/shapes";
+import { idleState } from "@workspace/seo-rules/state";
+import { Context, Effect, Layer, Stream } from "effect";
 import type { Browser } from "wxt/browser";
 
-const decodeState = Schema.decodeUnknown(AuditState);
+const isAuditState = (v: unknown): v is AuditState => {
+  if (typeof v !== "object" || v === null) {
+    return false;
+  }
+  const tag = (v as { _tag?: unknown })._tag;
+  return (
+    tag === "Idle" ||
+    tag === "Running" ||
+    tag === "Ready" ||
+    tag === "Loading" ||
+    tag === "Restricted" ||
+    tag === "AuditError"
+  );
+};
 
 export interface PanelClientShape {
   readonly refresh: Effect.Effect<void>;
@@ -45,18 +59,14 @@ const make = Effect.sync((): PanelClientShape => {
           (msg as { type?: unknown }).type === "state"
         ) {
           const raw = (msg as { state: unknown }).state;
-          decodeState(raw).pipe(
-            Effect.match({
-              onFailure: () => undefined,
-              onSuccess: (state) => emit.single(state),
-            }),
-            Effect.runSync
-          );
+          if (isAuditState(raw)) {
+            emit.single(raw);
+          }
         }
       };
 
       const onDisconnect = () => {
-        emit.single(Idle.make());
+        emit.single(idleState());
       };
 
       port.onMessage.addListener(onMessage);

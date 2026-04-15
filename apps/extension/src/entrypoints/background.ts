@@ -1,4 +1,8 @@
 import {
+  loadSchemaVocab,
+  type SchemaVocab,
+} from "@workspace/seo-rules/generated/schema-vocab";
+import {
   AuditError,
   Loading,
   Ready,
@@ -42,6 +46,8 @@ const originOf = (url: string): string => {
   }
 };
 
+let vocabReadyRef: Promise<SchemaVocab> | null = null;
+
 const auditTab = Effect.fn("Background.auditTab")(function* (
   tabId: TabId,
   reason: string,
@@ -72,6 +78,9 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
     }
     const origin = originOf(page.url);
     const siteSignals = yield* siteSignalsService.get(origin, page);
+    if (vocabReadyRef !== null) {
+      yield* Effect.promise(() => vocabReadyRef as Promise<SchemaVocab>);
+    }
     const result = yield* auditor.audit(page, signals, siteSignals);
     yield* cache.set(tabId, { url: page.url, result, at: Date.now() });
     yield* bus.publish(tabId, Ready.make({ page, result }));
@@ -306,8 +315,18 @@ const main = Effect.gen(function* () {
   );
 });
 
+const fetchSchemaVocab = async () => {
+  const url = browser.runtime.getURL("/schema-vocab.json");
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to load schema-vocab.json: ${res.status}`);
+  }
+  return res.json();
+};
+
 export default defineBackground(() => {
   const runtime = ManagedRuntime.make(appLayer);
+  vocabReadyRef = loadSchemaVocab(fetchSchemaVocab);
   runtime.runFork(main);
 
   browser.action.onClicked.addListener(async (tab) => {

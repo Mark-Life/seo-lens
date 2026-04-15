@@ -1,4 +1,4 @@
-import type { Category } from "@workspace/seo-rules/schema";
+import type { Category } from "@workspace/seo-rules/shapes";
 
 export const categoryLabels: Record<Category, string> = {
   meta: "Meta tags",
