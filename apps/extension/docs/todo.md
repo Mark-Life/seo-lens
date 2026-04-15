@@ -11,14 +11,14 @@ Brag/growth loop: one-click share button on the Overview tab that renders a bran
 - Monogram circle fallback when no favicon decodes.
 - Branded `seo-lens.dev` attribution in the card footer.
 
-## 2. Feedback form
+## 2. Feedback form ✅
 
-In-extension feedback entry point for bug reports / issues.
+In-extension feedback tab that POSTs to a Next.js route on the web app; the route ACKs fast and forwards the message to a private Telegram chat via grammY (`after()`).
 
-- Free-text message box.
-- Auto-capture context: current URL, page title, framework/stack hints if detectable, extension version, browser/UA.
-- Optional contact field (email).
-- Decide submission target (e.g. hosted endpoint, GitHub issue, email).
+- Side-panel Feedback tab with message (min 5 chars) + optional email, auto-attaches URL, page title, user agent, and extension version.
+- Next.js route at `apps/web/app/api/extension/feedback` — zod-validated body, `chrome-extension://` CORS reflection, `next/server#after()` dispatches grammY `sendMessage`.
+- Telegram bot token + chat ID from `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` env vars. No database.
+- Feedback URL overridable via `VITE_FEEDBACK_URL` for local dev; prod falls back to `seo-lens.dev`.
 
 ## 3. Real-world testing pass
 

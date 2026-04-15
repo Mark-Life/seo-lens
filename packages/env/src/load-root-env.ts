@@ -7,7 +7,7 @@ import { config } from "dotenv";
  * Does not override existing env vars (existing values take precedence).
  */
 const findMonorepoRoot = () => {
-  let dir = import.meta.dirname;
+  let dir = import.meta.dirname ?? process.cwd();
   for (let i = 0; i < 10; i++) {
     if (existsSync(resolve(dir, "turbo.json"))) {
       return dir;
