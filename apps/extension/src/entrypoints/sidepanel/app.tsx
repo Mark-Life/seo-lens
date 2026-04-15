@@ -6,6 +6,7 @@ import type {
 } from "@workspace/seo-rules/shapes";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { FeedbackDialog } from "./components/feedback-dialog";
 import { Header } from "./components/header";
 import { OverviewTab } from "./components/overview-tab";
 import { ErrorState } from "./components/states/error";
@@ -183,13 +184,16 @@ export const App = () => {
           ))}
 
         <footer className="border-border border-t px-5 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <span className="font-display text-[11px] text-muted-foreground italic">
               seo lens
             </span>
-            <span className="font-mono text-[9px] text-muted-foreground/70 uppercase tracking-widest">
-              v0.0.1 · Mark Life Ltd
-            </span>
+            <div className="flex items-center gap-2">
+              <FeedbackDialog page={snapshot?.page} />
+              <span className="font-mono text-[9px] text-muted-foreground/70 uppercase tracking-widest">
+                v0.0.1 · Mark Life Ltd
+              </span>
+            </div>
           </div>
         </footer>
       </div>
