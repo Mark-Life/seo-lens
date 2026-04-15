@@ -6,6 +6,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
       "outputs": [".next/**", "!.next/cache/**", ".output/**"]
     },
     "lint": {},
