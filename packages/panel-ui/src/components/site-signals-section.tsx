@@ -1,3 +1,5 @@
+import { CopyButton } from "@workspace/panel-ui/components/copy-button";
+import { SectionLabel } from "@workspace/panel-ui/components/section-label";
 import type {
   Favicon,
   Feed,
@@ -11,8 +13,6 @@ import type {
   WebManifest,
 } from "@workspace/seo-rules/shapes";
 import type { ReactNode } from "react";
-import { CopyButton } from "./copy-button";
-import { SectionLabel } from "./section-label";
 
 interface RowProps {
   readonly children?: ReactNode;

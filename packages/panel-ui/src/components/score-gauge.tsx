@@ -1,3 +1,5 @@
+import { tierFor } from "../lib/tier";
+
 interface ScoreGaugeProps {
   score: number;
 }
@@ -9,22 +11,6 @@ const CIRC = 2 * Math.PI * RADIUS;
 const ARC_FRACTION = 0.78;
 const ARC_LEN = CIRC * ARC_FRACTION;
 const ROTATION = 90 + (1 - ARC_FRACTION) * 180;
-
-function tierFor(score: number): { letter: string; label: string } {
-  if (score >= 90) {
-    return { letter: "A", label: "Excellent" };
-  }
-  if (score >= 80) {
-    return { letter: "B", label: "Solid" };
-  }
-  if (score >= 70) {
-    return { letter: "C", label: "Needs work" };
-  }
-  if (score >= 60) {
-    return { letter: "D", label: "Underperforming" };
-  }
-  return { letter: "F", label: "Critical" };
-}
 
 export function ScoreGauge({ score }: ScoreGaugeProps) {
   const clamped = Math.max(0, Math.min(100, score));

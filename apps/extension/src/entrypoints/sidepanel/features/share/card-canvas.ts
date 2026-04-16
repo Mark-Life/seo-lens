@@ -1,3 +1,4 @@
+import { tierFor } from "@workspace/panel-ui/lib/tier";
 import type { AuditResult, Category } from "@workspace/seo-rules/shapes";
 
 export const CARD_WIDTH = 1200;
@@ -26,22 +27,6 @@ const CATEGORY_LABELS: Record<Category, string> = {
   images: "Images",
   indexing: "Indexing",
   site: "Site-wide",
-};
-
-const tierFor = (score: number) => {
-  if (score >= 90) {
-    return { letter: "A", label: "EXCELLENT" };
-  }
-  if (score >= 80) {
-    return { letter: "B", label: "SOLID" };
-  }
-  if (score >= 70) {
-    return { letter: "C", label: "NEEDS WORK" };
-  }
-  if (score >= 60) {
-    return { letter: "D", label: "UNDERPERFORMING" };
-  }
-  return { letter: "F", label: "CRITICAL" };
 };
 
 const barTone = (score: number) => {
@@ -316,6 +301,7 @@ export const drawCard = ({
 
   // Tier row
   const tier = tierFor(result.score);
+  const tierLabel = tier.label.toUpperCase();
   const tierBoxSize = 40;
   const tierBoxTop = scoreRowTop + 200 + 12;
   const tierLetterOpts: TextOpts = {
@@ -332,7 +318,7 @@ export const drawCard = ({
     spacing: 2,
     baseline: "middle",
   };
-  const tierLabelW = measureText(ctx, tier.label, tierLabelOpts);
+  const tierLabelW = measureText(ctx, tierLabel, tierLabelOpts);
   const tierRowW = tierBoxSize + 12 + tierLabelW;
   const tierRowLeft = scoreColCenter - tierRowW / 2;
 
@@ -348,7 +334,7 @@ export const drawCard = ({
   );
   drawText(
     ctx,
-    tier.label,
+    tierLabel,
     tierRowLeft + tierBoxSize + 12,
     tierBoxTop + tierBoxSize / 2,
     tierLabelOpts
