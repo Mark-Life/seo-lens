@@ -1,4 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
-  <rect width="128" height="128" rx="24" fill="#3B82F6"/>
-  <text x="64" y="84" text-anchor="middle" font-family="system-ui" font-weight="bold" font-size="64" fill="white">S</text>
+  <defs>
+    <clipPath id="frame">
+      <rect width="128" height="128" rx="24"/>
+    </clipPath>
+  </defs>
+
+  <rect width="128" height="128" rx="24" fill="#0a0a0a"/>
+
+  <g clip-path="url(#frame)">
+    <!-- Magnifying glass body — large, fully visible in frame -->
+    <circle cx="56" cy="52" r="44" stroke="#47d1cd" stroke-width="9" fill="none"/>
+
+    <!-- Glass handle — partially out of frame -->
+    <line x1="91" y1="87" x2="138" y2="134" stroke="#47d1cd" stroke-width="11" stroke-linecap="round"/>
+
+    <!-- Code bracket inside lens: < /> -->
+    <path d="M38 40 L24 52 L38 64" stroke="#47d1cd" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M74 40 L88 52 L74 64" stroke="#47d1cd" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <line x1="62" y1="34" x2="50" y2="70" stroke="#47d1cd" stroke-width="5" stroke-linecap="round"/>
+  </g>
 </svg>

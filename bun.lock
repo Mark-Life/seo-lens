@@ -18,7 +18,7 @@
     },
     "apps/extension": {
       "name": "extension",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@effect/platform": "catalog:",
         "@effect/platform-browser": "catalog:",
