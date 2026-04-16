@@ -3,12 +3,12 @@ import type { ReactNode } from "react";
 export function FetchedHtmlDemo() {
   return (
     <div
-      className="relative overflow-hidden rounded-xl border border-neutral-800 bg-[#0a0a0a] shadow-2xl shadow-black/40"
+      className="relative overflow-hidden md:rounded-xl md:border md:border-neutral-800 md:bg-[#0a0a0a] md:shadow-2xl md:shadow-black/40"
       style={{ aspectRatio: "16/10" }}
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_100%,rgba(71,209,205,0.06),transparent_70%)]"
+        className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_60%_50%_at_50%_100%,rgba(71,209,205,0.06),transparent_70%)] md:block"
       />
 
       <div className="grid h-full grid-cols-[1.15fr_1fr]">
@@ -16,7 +16,7 @@ export function FetchedHtmlDemo() {
         <RenderedPane />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#47d1cd]/25 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-px bg-linear-to-r from-transparent via-[#47d1cd]/25 to-transparent md:block" />
     </div>
   );
 }

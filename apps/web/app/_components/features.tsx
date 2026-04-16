@@ -219,7 +219,7 @@ function FeatureRow({ feature }: { feature: Feature }) {
         ) : null}
       </div>
 
-      <div className="md:col-span-7">
+      <div className="min-w-0 md:col-span-7">
         {feature.demo ?? (
           <Placeholder
             aspect={feature.ph.aspect ?? "16/10"}

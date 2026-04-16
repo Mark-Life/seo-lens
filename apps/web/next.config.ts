@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
     // Enable filesystem caching for `next build`
     turbopackFileSystemCacheForBuild: true,
   },
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;
