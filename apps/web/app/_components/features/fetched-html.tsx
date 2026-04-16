@@ -2,16 +2,13 @@ import type { ReactNode } from "react";
 
 export function FetchedHtmlDemo() {
   return (
-    <div
-      className="relative overflow-hidden md:rounded-xl md:border md:border-neutral-800 md:bg-[#0a0a0a] md:shadow-2xl md:shadow-black/40"
-      style={{ aspectRatio: "16/10" }}
-    >
+    <div className="relative overflow-hidden md:aspect-[16/10] md:rounded-xl md:border md:border-neutral-800 md:bg-[#0a0a0a] md:shadow-2xl md:shadow-black/40">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_60%_50%_at_50%_100%,rgba(71,209,205,0.06),transparent_70%)] md:block"
       />
 
-      <div className="grid h-full grid-cols-[1.15fr_1fr]">
+      <div className="grid h-full grid-rows-2 md:grid-cols-[1.15fr_1fr] md:grid-rows-none">
         <SourcePane />
         <RenderedPane />
       </div>
@@ -23,7 +20,7 @@ export function FetchedHtmlDemo() {
 
 function SourcePane() {
   return (
-    <div className="relative flex min-w-0 flex-col border-neutral-900 border-r bg-[#0a0a0a]">
+    <div className="relative flex min-w-0 flex-col border-neutral-900 border-b bg-[#0a0a0a] md:border-r md:border-b-0">
       <PaneHeader>
         <span className="text-[#47d1cd]">GET</span>
         <span className="truncate text-neutral-400">
