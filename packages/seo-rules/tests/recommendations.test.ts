@@ -331,6 +331,18 @@ describe("recommendConflictRule", () => {
     expect(recommendConflictRule.run(page, weakArticle)).toEqual([]);
   });
 
+  it("silent when matching type coexists with non-matching type", () => {
+    const page = basePage({
+      url: PageUrl.make("https://example.com/blog/my-post"),
+      headings: [h1("Post title")],
+      jsonLd: [
+        { "@context": "https://schema.org", "@type": "Article" },
+        { "@context": "https://schema.org", "@type": "WebSite" },
+      ],
+    });
+    expect(recommendConflictRule.run(page, articleLikeSignals())).toEqual([]);
+  });
+
   it("silent when no JSON-LD at all", () => {
     expect(
       recommendConflictRule.run(articleLikePage(), articleLikeSignals())

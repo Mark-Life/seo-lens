@@ -32,5 +32,14 @@ export const useAuditState = () => {
     );
   }, [runtime]);
 
-  return { state, refresh };
+  const reloadPage = useCallback(() => {
+    runtime.runFork(
+      Effect.gen(function* () {
+        const client = yield* PanelClient;
+        yield* client.reloadPage;
+      })
+    );
+  }, [runtime]);
+
+  return { state, refresh, reloadPage };
 };

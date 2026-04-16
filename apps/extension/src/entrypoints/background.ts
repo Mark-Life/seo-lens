@@ -34,9 +34,10 @@ import {
 interface AuditRequest {
   readonly reason: string;
   readonly tabId: TabId;
+  readonly urgent: boolean;
 }
 
-const SETTLE_DELAY = "1800 millis";
+const SETTLE_DELAY = "1000 millis";
 
 const originOf = (url: string): string => {
   try {
@@ -62,7 +63,10 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
   yield* bus.publish(tabId, Running.make({ reason }));
 
   const program = Effect.gen(function* () {
-    const { page, signals } = yield* extractor.extract(tabId);
+    const { page, signals } = yield* extractor.extract(
+      tabId,
+      reason === "settle"
+    );
     const cached = yield* cache.get(tabId);
     if (
       Option.isSome(cached) &&
@@ -76,25 +80,73 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
       );
       return;
     }
-    const origin = originOf(page.url);
-    const siteSignals = yield* siteSignalsService.get(origin, page);
+
+    const urlCached = yield* cache.getByUrl(page.url);
+    if (Option.isSome(urlCached)) {
+      yield* bus.publish(
+        tabId,
+        Ready.make({ page, result: urlCached.value.result })
+      );
+    }
+
+    // Phase 1: page-level audit (no site signals needed).
     if (vocabReadyRef !== null) {
       yield* Effect.promise(() => vocabReadyRef as Promise<SchemaVocab>);
     }
-    const result = yield* auditor.audit(page, signals, siteSignals);
-    yield* cache.set(tabId, { url: page.url, result, at: Date.now() });
-    yield* bus.publish(tabId, Ready.make({ page, result }));
-    if (page.headings.length === 0 && reason !== "settle") {
+    const pageResult = yield* auditor.auditPage(page, signals);
+    yield* cache.set(tabId, {
+      url: page.url,
+      result: pageResult,
+      at: Date.now(),
+    });
+    yield* bus.publish(tabId, Ready.make({ page, result: pageResult }));
+
+    const isThinPage = page.headings.length === 0 || page.title.trim() === "";
+
+    if (isThinPage && reason !== "settle") {
       yield* scheduleSettle(tabId);
     }
+
+    // Phase 2: full audit with site signals (forked, non-blocking).
+    yield* Effect.gen(function* () {
+      const origin = originOf(page.url);
+      const siteSignals = yield* siteSignalsService.get(origin, page);
+      const fullResult = yield* auditor.audit(page, signals, siteSignals);
+      yield* cache.set(tabId, {
+        url: page.url,
+        result: fullResult,
+        at: Date.now(),
+      });
+      yield* bus.publish(tabId, Ready.make({ page, result: fullResult }));
+    }).pipe(
+      Effect.catchTag("AuditFailed", (e) =>
+        bus.publish(tabId, AuditError.make({ message: String(e.cause) }))
+      ),
+      Effect.forkDaemon,
+      Effect.asVoid
+    );
   });
 
   yield* program.pipe(
     Effect.catchTags({
       RestrictedUrl: () => bus.publish(tabId, Restricted.make()),
       TabNotReady: () => bus.publish(tabId, Loading.make()),
-      ExtractionFailed: (e) =>
-        bus.publish(tabId, AuditError.make({ message: String(e.cause) })),
+      ExtractionFailed: (e) => {
+        const needsReload =
+          typeof e.cause === "object" &&
+          e.cause !== null &&
+          "_tag" in e.cause &&
+          e.cause._tag === "NoActiveTab";
+        return bus.publish(
+          tabId,
+          AuditError.make({
+            message: needsReload
+              ? "Could not reach the page. Reload the tab to connect."
+              : String(e.cause),
+            needsReload,
+          })
+        );
+      },
       AuditFailed: (e) =>
         bus.publish(tabId, AuditError.make({ message: String(e.cause) })),
     })
@@ -112,7 +164,8 @@ const main = Effect.gen(function* () {
   const bus = yield* AuditBus;
   const cache = yield* AuditCache;
 
-  const queue = yield* Queue.sliding<AuditRequest>(16);
+  const urgentQueue = yield* Queue.sliding<AuditRequest>(16);
+  const normalQueue = yield* Queue.sliding<AuditRequest>(16);
   const activeTab = yield* SubscriptionRef.make<Option.Option<TabId>>(
     Option.none()
   );
@@ -120,27 +173,30 @@ const main = Effect.gen(function* () {
   const setActive = (tabId: TabId) =>
     SubscriptionRef.set(activeTab, Option.some(tabId));
 
-  const enqueue = (req: AuditRequest) => Queue.offer(queue, req);
+  const enqueue = (req: AuditRequest) =>
+    Queue.offer(req.urgent ? urgentQueue : normalQueue, req);
 
   const scheduleSettle = (tabId: TabId) =>
     Effect.gen(function* () {
       yield* Effect.sleep(SETTLE_DELAY);
       yield* cache.invalidate(tabId);
-      yield* enqueue({ tabId, reason: "settle" });
+      yield* enqueue({ tabId, reason: "settle", urgent: true });
     }).pipe(Effect.forkDaemon, Effect.asVoid);
 
   handle = {
     focusTab: (tabId, reason) =>
       Effect.gen(function* () {
         yield* setActive(tabId);
-        yield* enqueue({ tabId, reason });
+        yield* enqueue({ tabId, reason, urgent: true });
       }),
   };
 
   // Bootstrap from current active tab.
   yield* api.getActiveTab().pipe(
     Effect.tap((tab) => setActive(tab.id)),
-    Effect.tap((tab) => enqueue({ tabId: tab.id, reason: "boot" })),
+    Effect.tap((tab) =>
+      enqueue({ tabId: tab.id, reason: "boot", urgent: false })
+    ),
     Effect.ignore
   );
 
@@ -151,7 +207,11 @@ const main = Effect.gen(function* () {
         switch (ev._tag) {
           case "Activated": {
             yield* setActive(ev.tabId);
-            yield* enqueue({ tabId: ev.tabId, reason: "activated" });
+            yield* enqueue({
+              tabId: ev.tabId,
+              reason: "activated",
+              urgent: true,
+            });
             return;
           }
           case "Updated": {
@@ -160,7 +220,11 @@ const main = Effect.gen(function* () {
             );
             const cur = yield* SubscriptionRef.get(activeTab);
             if (Option.isSome(cur) && cur.value === ev.tabId) {
-              yield* enqueue({ tabId: ev.tabId, reason: "updated" });
+              yield* enqueue({
+                tabId: ev.tabId,
+                reason: "updated",
+                urgent: false,
+              });
             }
             return;
           }
@@ -170,7 +234,11 @@ const main = Effect.gen(function* () {
             );
             const cur = yield* SubscriptionRef.get(activeTab);
             if (Option.isSome(cur) && cur.value === ev.tabId) {
-              yield* enqueue({ tabId: ev.tabId, reason: "history" });
+              yield* enqueue({
+                tabId: ev.tabId,
+                reason: "history",
+                urgent: false,
+              });
             }
             return;
           }
@@ -178,7 +246,11 @@ const main = Effect.gen(function* () {
             const tab = yield* api.getActiveTab().pipe(Effect.option);
             if (Option.isSome(tab)) {
               yield* setActive(tab.value.id);
-              yield* enqueue({ tabId: tab.value.id, reason: "focus" });
+              yield* enqueue({
+                tabId: tab.value.id,
+                reason: "focus",
+                urgent: true,
+              });
             }
             return;
           }
@@ -191,18 +263,21 @@ const main = Effect.gen(function* () {
     Effect.forkDaemon
   );
 
-  // Per-tab debounced consumer (latest wins via the sliding queue).
-  yield* Stream.fromQueue(queue).pipe(
-    Stream.groupByKey((r) => r.tabId),
-    GroupBy.evaluate((_key, inner) =>
-      inner.pipe(
-        Stream.debounce("500 millis"),
-        Stream.mapEffect((r) => auditTab(r.tabId, r.reason, scheduleSettle))
-      )
-    ),
-    Stream.runDrain,
-    Effect.forkDaemon
-  );
+  const consumeQueue = (q: Queue.Queue<AuditRequest>, debounceMs: number) =>
+    Stream.fromQueue(q).pipe(
+      Stream.groupByKey((r) => r.tabId),
+      GroupBy.evaluate((_key, inner) =>
+        inner.pipe(
+          Stream.debounce(`${debounceMs} millis`),
+          Stream.mapEffect((r) => auditTab(r.tabId, r.reason, scheduleSettle))
+        )
+      ),
+      Stream.runDrain,
+      Effect.forkDaemon
+    );
+
+  yield* consumeQueue(urgentQueue, 50);
+  yield* consumeQueue(normalQueue, 300);
 
   // Side-panel port connections.
   const ports = Stream.asyncPush<Browser.runtime.Port>((emit) =>
@@ -224,7 +299,11 @@ const main = Effect.gen(function* () {
       // Trigger an audit for the current active tab on connect.
       const cur = yield* SubscriptionRef.get(activeTab);
       if (Option.isSome(cur)) {
-        yield* enqueue({ tabId: cur.value, reason: "panel-connect" });
+        yield* enqueue({
+          tabId: cur.value,
+          reason: "panel-connect",
+          urgent: true,
+        });
       }
 
       // Stream audit state for the current active tab to the port.
@@ -267,13 +346,24 @@ const main = Effect.gen(function* () {
       const handleHello = (tabId: TabId) =>
         Effect.gen(function* () {
           yield* setActive(tabId);
-          yield* enqueue({ tabId, reason: "panel-hello" });
+          yield* enqueue({ tabId, reason: "panel-hello", urgent: true });
         });
 
       const handleRefresh = Effect.gen(function* () {
         const current = yield* SubscriptionRef.get(activeTab);
         if (Option.isSome(current)) {
-          yield* enqueue({ tabId: current.value, reason: "manual" });
+          yield* enqueue({
+            tabId: current.value,
+            reason: "manual",
+            urgent: true,
+          });
+        }
+      });
+
+      const handleReloadPage = Effect.gen(function* () {
+        const current = yield* SubscriptionRef.get(activeTab);
+        if (Option.isSome(current)) {
+          yield* api.reloadTab(current.value);
         }
       });
 
@@ -288,6 +378,9 @@ const main = Effect.gen(function* () {
         if (m.type === "refresh") {
           return { _tag: "refresh" as const };
         }
+        if (m.type === "reload-page") {
+          return { _tag: "reload-page" as const };
+        }
         return null;
       };
 
@@ -296,9 +389,16 @@ const main = Effect.gen(function* () {
         if (parsed === null) {
           return Effect.void;
         }
-        return parsed._tag === "hello"
-          ? handleHello(parsed.tabId)
-          : handleRefresh;
+        switch (parsed._tag) {
+          case "hello":
+            return handleHello(parsed.tabId);
+          case "refresh":
+            return handleRefresh;
+          case "reload-page":
+            return handleReloadPage;
+          default:
+            return Effect.void;
+        }
       };
 
       yield* portMessages.pipe(Stream.tap(handlePortMessage), Stream.runDrain);

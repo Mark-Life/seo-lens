@@ -78,6 +78,7 @@ export const recommendConflictRule: AuditRule = {
     }
 
     const declared = collectTopLevelJsonLdTypes(page.jsonLd);
+    let hasMatch = false;
     const conflicts: { declaredType: string; declaredKind: PageKind }[] = [];
     for (const type of declared) {
       const declaredKind = kindForDeclaredType(type);
@@ -86,9 +87,11 @@ export const recommendConflictRule: AuditRule = {
       }
       if (isDisjoint(top.kind, declaredKind)) {
         conflicts.push({ declaredType: type, declaredKind });
+      } else {
+        hasMatch = true;
       }
     }
-    if (conflicts.length === 0) {
+    if (conflicts.length === 0 || hasMatch) {
       return [];
     }
 

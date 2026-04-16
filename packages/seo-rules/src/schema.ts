@@ -308,6 +308,9 @@ export class AuditFinding extends Schema.Class<AuditFinding>("AuditFinding")({
 
 // ─── AuditResult ───────────────────────────────────────────────────────
 
+export const AuditPhase = Schema.Literal("page", "full");
+export type AuditPhase = typeof AuditPhase.Type;
+
 export class FindingCounts extends Schema.Class<FindingCounts>("FindingCounts")(
   {
     error: Schema.Int.pipe(Schema.nonNegative()),
@@ -326,11 +329,12 @@ export class CategoryScore extends Schema.Class<CategoryScore>("CategoryScore")(
 
 export class AuditResult extends Schema.Class<AuditResult>("AuditResult")({
   url: PageUrl,
+  phase: AuditPhase,
   score: Score,
   counts: FindingCounts,
   categoryScores: Schema.Array(CategoryScore),
   findings: Schema.Array(AuditFinding),
-  siteSignals: SiteSignals,
+  siteSignals: Schema.NullOr(SiteSignals),
   timestamp: Schema.Number,
 }) {}
 
@@ -356,6 +360,7 @@ export class Restricted extends Schema.TaggedClass<Restricted>()(
 
 export class AuditError extends Schema.TaggedClass<AuditError>()("AuditError", {
   message: Schema.String,
+  needsReload: Schema.optionalWith(Schema.Boolean, { default: () => false }),
 }) {}
 
 export const AuditState = Schema.Union(

@@ -11,11 +11,6 @@ const decodePageSignals = Schema.decodeUnknownEither(PageSignals);
 export default defineContentScript({
   matches: ["<all_urls>"],
   main() {
-    const nextFrame = () =>
-      new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve());
-      });
-
     const waitForReadyComplete = () =>
       new Promise<void>((resolve) => {
         if (document.readyState === "complete") {
@@ -31,28 +26,34 @@ export default defineContentScript({
         document.addEventListener("readystatechange", onReady);
       });
 
-    const waitForIdle = (timeoutMs: number) =>
+    /** Resolves when DOM stops mutating for `quietMs`, or after `maxMs` hard cap. */
+    const observeUntilQuiet = (quietMs: number, maxMs: number) =>
       new Promise<void>((resolve) => {
-        const ric = (
-          globalThis as typeof globalThis & {
-            requestIdleCallback?: (
-              cb: () => void,
-              opts?: { timeout: number }
-            ) => number;
-          }
-        ).requestIdleCallback;
-        if (typeof ric === "function") {
-          ric(() => resolve(), { timeout: timeoutMs });
-          return;
-        }
-        setTimeout(resolve, timeoutMs);
+        let quietTimer: ReturnType<typeof setTimeout>;
+        const done = () => {
+          observer.disconnect();
+          clearTimeout(quietTimer);
+          clearTimeout(hardCap);
+          resolve();
+        };
+        const resetQuiet = () => {
+          clearTimeout(quietTimer);
+          quietTimer = setTimeout(done, quietMs);
+        };
+        const observer = new MutationObserver(resetQuiet);
+        observer.observe(document.documentElement, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          characterData: true,
+        });
+        const hardCap = setTimeout(done, maxMs);
+        resetQuiet();
       });
 
-    const extractAfterSettle = async () => {
+    const extractAfterSettle = async (settle = false) => {
       await waitForReadyComplete();
-      await nextFrame();
-      await nextFrame();
-      await waitForIdle(800);
+      await observeUntilQuiet(settle ? 250 : 150, settle ? 6000 : 4000);
       const url = PageUrl.make(document.location.href);
       const page = extractFromDocument(document, url);
       const signals = extractPageSignals(document, url);
@@ -72,12 +73,12 @@ export default defineContentScript({
 
     browser.runtime.onMessage.addListener(
       (
-        message: { type: string },
+        message: { type: string; settle?: boolean },
         _sender,
         sendResponse: (data: unknown) => void
       ) => {
         if (message.type === "EXTRACT_PAGE_DATA") {
-          extractAfterSettle().then(sendResponse);
+          extractAfterSettle(message.settle).then(sendResponse);
           return true;
         }
         return true;
