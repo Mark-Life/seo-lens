@@ -1,6 +1,11 @@
-import type { AuditResult, PageData } from "@workspace/seo-rules/shapes";
+import type {
+  AuditResult,
+  Category,
+  PageData,
+} from "@workspace/seo-rules/shapes";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import { Share2 } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { categoryLabels } from "../lib/labels";
 import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
 import { CopyButton } from "./copy-button";
@@ -56,9 +61,20 @@ interface OverviewTabProps {
   readonly result: AuditResult;
 }
 
+/** Categories that only appear when site signals are available. */
+const SITE_CATEGORIES: readonly Category[] = ["site"];
+
 export function OverviewTab({ result, page }: OverviewTabProps) {
   const refreshing = useIsRefreshing();
   const [shareOpen, setShareOpen] = useState(false);
+
+  const pendingSiteCategories = useMemo(() => {
+    if (result.phase !== "page") {
+      return [];
+    }
+    const present = new Set(result.categoryScores.map((c) => c.id));
+    return SITE_CATEGORIES.filter((id) => !present.has(id));
+  }, [result.phase, result.categoryScores]);
   return (
     <div className="flex flex-col gap-7 px-5 py-6">
       {/* GAUGE */}
@@ -175,6 +191,20 @@ export function OverviewTab({ result, page }: OverviewTabProps) {
               </li>
             );
           })}
+          {pendingSiteCategories.map((id) => (
+            <li className="flex flex-col gap-1.5" key={id}>
+              <div className="kv-row text-[12px]">
+                <span className="text-muted-foreground/60">
+                  {categoryLabels[id]}
+                </span>
+                <span className="kv-leader" />
+                <Skeleton className="inline-block h-3 w-6 align-middle" />
+              </div>
+              <div className="h-[3px] w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-full w-full animate-pulse rounded-full bg-muted-foreground/10" />
+              </div>
+            </li>
+          ))}
         </ul>
       </section>
 

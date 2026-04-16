@@ -1,6 +1,7 @@
 export type {
   AuditError,
   AuditFinding,
+  AuditPhase,
   AuditResult,
   AuditRootInfo,
   AuditRootSource,

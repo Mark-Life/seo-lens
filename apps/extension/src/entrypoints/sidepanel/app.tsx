@@ -91,7 +91,11 @@ const ReadyView = ({ page, result, tab, onTabChange }: ReadyViewProps) => (
       {tab === "overview" && <OverviewTab page={page} result={result} />}
       {tab === "inspect" && (
         <Suspense fallback={<LoadingState />}>
-          <InspectTab page={page} siteSignals={result.siteSignals} />
+          <InspectTab
+            page={page}
+            phase={result.phase}
+            siteSignals={result.siteSignals}
+          />
         </Suspense>
       )}
     </main>
@@ -106,7 +110,8 @@ const ReadyView = ({ page, result, tab, onTabChange }: ReadyViewProps) => (
 const renderFallback = (
   state: AuditState,
   snapshot: ReadySnapshot | null,
-  onRefresh: () => void
+  onRefresh: () => void,
+  onReloadPage: () => void
 ) => {
   switch (state._tag) {
     case "Ready":
@@ -114,7 +119,13 @@ const renderFallback = (
     case "Restricted":
       return <RestrictedState />;
     case "AuditError":
-      return <ErrorState message={state.message} onRetry={onRefresh} />;
+      return (
+        <ErrorState
+          message={state.message}
+          onReloadPage={state.needsReload ? onReloadPage : undefined}
+          onRetry={state.needsReload ? undefined : onRefresh}
+        />
+      );
     default:
       // Idle / Loading / Running: only show the full loader when we have
       // nothing to keep on screen. Otherwise keep the stale snapshot.
@@ -123,7 +134,7 @@ const renderFallback = (
 };
 
 export const App = () => {
-  const { state, refresh } = useAuditState();
+  const { state, refresh, reloadPage } = useAuditState();
   const [tab, setTab] = usePersistentTab<TabKey>(TAB_KEYS, "overview");
 
   // Keep the most recent Ready snapshot so the UI doesn't flicker between
@@ -158,7 +169,7 @@ export const App = () => {
     return () => clearTimeout(timer);
   }, [isTransient, snapshot]);
 
-  const fallback = renderFallback(state, snapshot, refresh);
+  const fallback = renderFallback(state, snapshot, refresh, reloadPage);
   const displayUrl =
     state._tag === "Ready" ? state.page.url : (lastUrlRef.current ?? undefined);
 

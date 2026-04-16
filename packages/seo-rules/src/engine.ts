@@ -1,5 +1,6 @@
 import {
   type AuditFinding,
+  type AuditPhase,
   AuditResult,
   type Category,
   CategoryScore,
@@ -17,8 +18,9 @@ const MAX_SCORE = 100;
 export function runAudit(
   page: PageData,
   signals: PageSignals,
-  siteSignals: SiteSignals,
-  rules: AuditRule[]
+  siteSignals: SiteSignals | null,
+  rules: AuditRule[],
+  phase: AuditPhase = "full"
 ): AuditResult {
   const findings: AuditFinding[] = [];
   const counts = { error: 0, warning: 0, info: 0, pass: 0 };
@@ -27,7 +29,7 @@ export function runAudit(
   let earnedWeight = 0;
 
   for (const rule of rules) {
-    const ruleFindings = rule.run(page, signals, siteSignals);
+    const ruleFindings = rule.run(page, signals, siteSignals ?? undefined);
     findings.push(...ruleFindings);
 
     for (const f of ruleFindings) {
@@ -68,6 +70,7 @@ export function runAudit(
 
   return AuditResult.make({
     url: page.url,
+    phase,
     score: Score.make(overall),
     counts: FindingCounts.make(counts),
     categoryScores,

@@ -31,7 +31,7 @@ export const renderCard = async (
   const candidates = collectFaviconCandidates(
     page.url,
     page.headLinks,
-    result.siteSignals.favicon?.url ?? null
+    result.siteSignals?.favicon?.url ?? null
   );
   const faviconDataUrl = await fetchFaviconDataUrl(candidates);
   const faviconImage = faviconDataUrl ? await loadImage(faviconDataUrl) : null;

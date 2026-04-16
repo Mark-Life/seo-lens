@@ -7,36 +7,69 @@ export interface CacheEntry {
   readonly url: string;
 }
 
-const TTL_MS = 30_000;
+const TAB_TTL_MS = 30_000;
+const URL_TTL_MS = 60_000;
+const URL_CACHE_MAX = 100;
 
 export interface AuditCacheShape {
   readonly get: (tabId: TabId) => Effect.Effect<Option.Option<CacheEntry>>;
+  readonly getByUrl: (url: string) => Effect.Effect<Option.Option<CacheEntry>>;
   readonly invalidate: (tabId: TabId) => Effect.Effect<void>;
   readonly set: (tabId: TabId, entry: CacheEntry) => Effect.Effect<void>;
 }
 
 const makeCache = (now: () => number): AuditCacheShape => {
-  const store = new Map<TabId, CacheEntry>();
+  const tabStore = new Map<TabId, CacheEntry>();
+  const urlStore = new Map<string, CacheEntry>();
+
+  const evictLru = () => {
+    if (urlStore.size >= URL_CACHE_MAX) {
+      const first = urlStore.keys().next().value;
+      if (first !== undefined) {
+        urlStore.delete(first);
+      }
+    }
+  };
+
+  const getUrlEntry = (url: string) => {
+    const entry = urlStore.get(url);
+    if (!entry) {
+      return Option.none<CacheEntry>();
+    }
+    if (now() - entry.at > URL_TTL_MS) {
+      urlStore.delete(url);
+      return Option.none<CacheEntry>();
+    }
+    return Option.some(entry);
+  };
+
   return {
     get: (tabId) =>
       Effect.sync(() => {
-        const entry = store.get(tabId);
+        const entry = tabStore.get(tabId);
         if (!entry) {
           return Option.none<CacheEntry>();
         }
-        if (now() - entry.at > TTL_MS) {
-          store.delete(tabId);
+        if (now() - entry.at > TAB_TTL_MS) {
+          tabStore.delete(tabId);
           return Option.none<CacheEntry>();
         }
         return Option.some(entry);
       }).pipe(Effect.withSpan("AuditCache.get")),
+    getByUrl: (url) =>
+      Effect.sync(() => getUrlEntry(url)).pipe(
+        Effect.withSpan("AuditCache.getByUrl")
+      ),
     set: (tabId, entry) =>
       Effect.sync(() => {
-        store.set(tabId, entry);
+        tabStore.set(tabId, entry);
+        urlStore.delete(entry.url);
+        evictLru();
+        urlStore.set(entry.url, entry);
       }).pipe(Effect.withSpan("AuditCache.set")),
     invalidate: (tabId) =>
       Effect.sync(() => {
-        store.delete(tabId);
+        tabStore.delete(tabId);
       }).pipe(Effect.withSpan("AuditCache.invalidate")),
   };
 };

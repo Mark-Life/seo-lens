@@ -20,6 +20,7 @@ const isAuditState = (v: unknown): v is AuditState => {
 
 export interface PanelClientShape {
   readonly refresh: Effect.Effect<void>;
+  readonly reloadPage: Effect.Effect<void>;
   readonly states: Stream.Stream<AuditState>;
 }
 
@@ -131,7 +132,17 @@ const make = Effect.sync((): PanelClientShape => {
     }
   });
 
-  return { states, refresh };
+  const reloadPage = Effect.sync(() => {
+    if (activePort) {
+      try {
+        activePort.postMessage({ type: "reload-page" });
+      } catch {
+        // port closed
+      }
+    }
+  });
+
+  return { states, refresh, reloadPage };
 });
 
 export class PanelClient extends Context.Tag("PanelClient")<

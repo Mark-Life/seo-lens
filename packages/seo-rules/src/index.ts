@@ -32,7 +32,8 @@ import {
 import { titleRule } from "./rules/title";
 import type { AuditRule } from "./types";
 
-export const defaultRules: readonly AuditRule[] = [
+/** Rules that only need PageData + PageSignals (no site-level fetches). */
+export const pageRules: readonly AuditRule[] = [
   titleRule,
   metaDescriptionRule,
   headingsRule,
@@ -50,6 +51,10 @@ export const defaultRules: readonly AuditRule[] = [
   recommendOrganizationRule,
   recommendBreadcrumbRule,
   recommendConflictRule,
+];
+
+/** Rules that require SiteSignals (robots.txt, sitemap, manifest, etc.). */
+export const siteRules: readonly AuditRule[] = [
   siteRobotsDisallowRule,
   siteNotInSitemapRule,
   siteSitemapMissingRule,
@@ -61,6 +66,8 @@ export const defaultRules: readonly AuditRule[] = [
   siteManifestMissingRule,
   siteFeedBrokenRule,
 ];
+
+export const defaultRules: readonly AuditRule[] = [...pageRules, ...siteRules];
 
 export { detectPageKind } from "./detect/page-kind";
 export {
@@ -126,6 +133,7 @@ export { titleRule } from "./rules/title";
 export {
   AuditError,
   AuditFinding,
+  AuditPhase,
   AuditResult,
   AuditRootInfo,
   AuditRootSource,

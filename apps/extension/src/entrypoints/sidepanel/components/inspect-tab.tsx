@@ -1,4 +1,8 @@
-import type { PageData, SiteSignals } from "@workspace/seo-rules/shapes";
+import type {
+  AuditPhase,
+  PageData,
+  SiteSignals,
+} from "@workspace/seo-rules/shapes";
 import {
   deriveBreadcrumbs,
   deriveImageGallery,
@@ -8,6 +12,7 @@ import {
   deriveSocialView,
   type IndexingStatus,
 } from "@workspace/seo-rules/view";
+import { Skeleton } from "@workspace/ui/components/skeleton";
 import { AlertTriangle, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
@@ -76,12 +81,46 @@ function MetaRow({ k, v }: { k: string; v: string | null }) {
   );
 }
 
-interface InspectTabProps {
-  readonly page: PageData;
-  readonly siteSignals: SiteSignals;
+function SiteSignalsBlock({
+  phase,
+  siteSignals,
+}: {
+  phase: AuditPhase;
+  siteSignals: SiteSignals | null;
+}) {
+  if (siteSignals) {
+    return (
+      <>
+        <SiteSignalsSection siteSignals={siteSignals} />
+        <div className="rule-hair" />
+      </>
+    );
+  }
+  if (phase !== "page") {
+    return null;
+  }
+  return (
+    <>
+      <section>
+        <SectionLabel hint="loading" index="08" title="Site-wide signals" />
+        <div className="mt-3 flex flex-col gap-2">
+          <Skeleton className="h-10 w-full rounded-md" />
+          <Skeleton className="h-10 w-full rounded-md" />
+          <Skeleton className="h-10 w-full rounded-md" />
+        </div>
+      </section>
+      <div className="rule-hair" />
+    </>
+  );
 }
 
-export function InspectTab({ page, siteSignals }: InspectTabProps) {
+interface InspectTabProps {
+  readonly page: PageData;
+  readonly phase: AuditPhase;
+  readonly siteSignals: SiteSignals | null;
+}
+
+export function InspectTab({ page, phase, siteSignals }: InspectTabProps) {
   const refreshing = useIsRefreshing();
   const meta = useMemo(() => deriveMetaView(page), [page]);
   const indexing = useMemo(() => deriveIndexingView(page), [page]);
@@ -404,9 +443,7 @@ export function InspectTab({ page, siteSignals }: InspectTabProps) {
       <div className="rule-hair" />
 
       {/* SITE-LEVEL SIGNALS */}
-      <SiteSignalsSection siteSignals={siteSignals} />
-
-      <div className="rule-hair" />
+      <SiteSignalsBlock phase={phase} siteSignals={siteSignals} />
 
       {/* IMAGES */}
       <section>

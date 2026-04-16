@@ -17,7 +17,8 @@ export interface ExtractedPage {
 
 export interface ExtractorShape {
   readonly extract: (
-    tabId: TabId
+    tabId: TabId,
+    settle?: boolean
   ) => Effect.Effect<
     ExtractedPage,
     ExtractionFailed | RestrictedUrl | TabNotReady
@@ -33,7 +34,10 @@ export class Extractor extends Context.Tag("Extractor")<
     Effect.gen(function* () {
       const api = yield* BrowserApi;
 
-      const extract = Effect.fn("Extractor.extract")(function* (tabId: TabId) {
+      const extract = Effect.fn("Extractor.extract")(function* (
+        tabId: TabId,
+        settle?: boolean
+      ) {
         const tab = yield* api
           .getTab(tabId)
           .pipe(
@@ -45,6 +49,7 @@ export class Extractor extends Context.Tag("Extractor")<
         const raw = yield* api
           .sendMessage<{ page: unknown; signals: unknown }>(tabId, {
             type: "EXTRACT_PAGE_DATA",
+            settle,
           })
           .pipe(
             Effect.catchTag("NoActiveTab", (cause) =>
@@ -72,7 +77,7 @@ export class Extractor extends Context.Tag("Extractor")<
     Layer.succeed(
       Extractor,
       Extractor.of({
-        extract: (tabId) => {
+        extract: (tabId, _settle?) => {
           const extracted = pages.get(tabId);
           return extracted
             ? Effect.succeed(extracted)

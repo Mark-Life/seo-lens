@@ -43,6 +43,7 @@ export interface BrowserApiShape {
   readonly getTab: (
     tabId: TabId
   ) => Effect.Effect<TabInfo, NoActiveTab | TabNotReady>;
+  readonly reloadTab: (tabId: TabId) => Effect.Effect<void, NoActiveTab>;
   readonly sendMessage: <A>(
     tabId: TabId,
     message: unknown
@@ -91,6 +92,14 @@ export class BrowserApi extends Context.Tag("BrowserApi")<
       }
       return tab;
     });
+
+    const reloadTab = (tabId: TabId) =>
+      Effect.tryPromise({
+        try: () => browser.tabs.reload(tabId),
+        catch: () => new NoActiveTab(),
+      }).pipe(
+        Effect.withSpan("BrowserApi.reloadTab", { attributes: { tabId } })
+      );
 
     const sendMessage = <A>(tabId: TabId, message: unknown) =>
       Effect.tryPromise({
@@ -148,6 +157,7 @@ export class BrowserApi extends Context.Tag("BrowserApi")<
       getTab,
       getActiveTab,
       ensureAuditable,
+      reloadTab,
       sendMessage,
       events,
     });
@@ -182,6 +192,7 @@ export class BrowserApi extends Context.Tag("BrowserApi")<
           isRestrictedUrl(tab.url)
             ? Effect.fail(new RestrictedUrl({ url: tab.url }))
             : Effect.succeed(tab),
+        reloadTab: () => Effect.void,
         sendMessage: <A>(tabId: TabId, message: unknown) =>
           init?.respond
             ? Effect.succeed(init.respond(tabId, message) as A)
