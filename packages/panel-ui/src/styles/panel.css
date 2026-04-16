@@ -1,0 +1,125 @@
+@source "../**/*.{ts,tsx}";
+
+.font-display {
+  font-family: var(--font-display, var(--font-sans, ui-sans-serif, system-ui));
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
+.font-mono {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-feature-settings: "calt", "ss01";
+}
+
+/* hairline rule used between sections */
+.rule-hair {
+  height: 1px;
+  background: color-mix(in oklch, var(--foreground) 12%, transparent);
+}
+
+/* dotted leader between key/value rows */
+.kv-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+.kv-leader {
+  border-bottom: 1px dotted
+    color-mix(in oklch, var(--foreground) 22%, transparent);
+  transform: translateY(-3px);
+}
+
+/* slim primary-tinted scrollbar — matches the extension side panel.
+   Scoped to .panel-scroll (and descendants) so it can be opted into
+   per surface without overriding host page scrollbars. */
+.panel-scroll,
+.panel-scroll * {
+  scrollbar-color: color-mix(in oklch, var(--primary) 35%, transparent)
+    transparent;
+  scrollbar-width: thin;
+}
+.panel-scroll::-webkit-scrollbar,
+.panel-scroll *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.panel-scroll::-webkit-scrollbar-track,
+.panel-scroll *::-webkit-scrollbar-track {
+  background: transparent;
+}
+.panel-scroll::-webkit-scrollbar-thumb,
+.panel-scroll *::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--primary) 28%, transparent);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+.panel-scroll::-webkit-scrollbar-thumb:hover,
+.panel-scroll *::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--primary) 55%, transparent);
+}
+.panel-scroll::-webkit-scrollbar-corner,
+.panel-scroll *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* primary-tinted shimmer for share card loading state */
+@keyframes share-shimmer {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
+.share-shimmer {
+  background-color: color-mix(in oklch, var(--primary) 10%, transparent);
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in oklch, var(--primary) 28%, transparent) 50%,
+    transparent 80%
+  );
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  animation: share-shimmer 1.6s ease-in-out infinite;
+}
+
+/* tree guides for heading hierarchy */
+.tree-row {
+  position: relative;
+  padding-left: 1rem;
+}
+.tree-row::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0.25rem;
+  width: 1px;
+  content: "";
+  background: color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+.tree-row::after {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.25rem;
+  width: 0.55rem;
+  height: 1px;
+  content: "";
+  background: color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+
+/* subtle background grain for the panel */
+.grain {
+  background-image:
+    radial-gradient(
+      circle at 10% 0%,
+      color-mix(in oklch, var(--primary) 6%, transparent),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 100% 100%,
+      color-mix(in oklch, var(--secondary) 5%, transparent),
+      transparent 45%
+    );
+}

@@ -1,29 +1,12 @@
-import type {
-  AuditResult,
-  Category,
-  PageData,
-} from "@workspace/seo-rules/shapes";
+import type { AuditResult, Category } from "@workspace/seo-rules/shapes";
 import { Skeleton } from "@workspace/ui/components/skeleton";
-import { Share2 } from "lucide-react";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { type ReactNode, useMemo } from "react";
 import { categoryLabels } from "../lib/labels";
-import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
 import { CopyButton } from "./copy-button";
-import { FindingsSection, reportToText } from "./findings-tab";
+import { FindingsSection, reportToText } from "./findings-section";
+import { DataSlot, useIsRefreshing } from "./refresh-context";
 import { ScoreGauge } from "./score-gauge";
 import { SectionLabel } from "./section-label";
-
-const ShareModal = lazy(() =>
-  import("../features/share/share-modal").then((m) => ({
-    default: m.ShareModal,
-  }))
-);
-
-const ShareErrorBoundary = lazy(() =>
-  import("../features/share/error-boundary").then((m) => ({
-    default: m.ShareErrorBoundary,
-  }))
-);
 
 const SEVERITY_ITEMS = [
   {
@@ -57,16 +40,20 @@ const SEVERITY_ITEMS = [
 ] as const;
 
 interface OverviewTabProps {
-  readonly page: PageData;
   readonly result: AuditResult;
+  /**
+   * Slot rendered next to the score gauge header. Callers that need a
+   * share-as-image flow render their own button + modal here; panel-ui stays
+   * free of runtime dependencies.
+   */
+  readonly shareSlot?: ReactNode;
 }
 
 /** Categories that only appear when site signals are available. */
 const SITE_CATEGORIES: readonly Category[] = ["site"];
 
-export function OverviewTab({ result, page }: OverviewTabProps) {
+export function OverviewTab({ result, shareSlot }: OverviewTabProps) {
   const refreshing = useIsRefreshing();
-  const [shareOpen, setShareOpen] = useState(false);
 
   const pendingSiteCategories = useMemo(() => {
     if (result.phase !== "page") {
@@ -81,15 +68,7 @@ export function OverviewTab({ result, page }: OverviewTabProps) {
       <section>
         <div className="flex items-center justify-between gap-2">
           <SectionLabel hint="Live" index="01" title="The reading" />
-          <button
-            aria-label="Share as image"
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm border border-transparent text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground"
-            disabled={refreshing}
-            onClick={() => setShareOpen(true)}
-            type="button"
-          >
-            <Share2 className="size-3.5" />
-          </button>
+          {shareSlot}
         </div>
         <div className="mt-4">
           {refreshing ? (
@@ -99,19 +78,6 @@ export function OverviewTab({ result, page }: OverviewTabProps) {
           )}
         </div>
       </section>
-
-      {shareOpen && (
-        <Suspense fallback={null}>
-          <ShareErrorBoundary onReset={() => setShareOpen(false)}>
-            <ShareModal
-              onOpenChange={setShareOpen}
-              open={shareOpen}
-              page={page}
-              result={result}
-            />
-          </ShareErrorBoundary>
-        </Suspense>
-      )}
 
       <div className="rule-hair" />
 

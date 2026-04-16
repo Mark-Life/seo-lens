@@ -22,6 +22,7 @@
       "dependencies": {
         "@effect/platform": "catalog:",
         "@effect/platform-browser": "catalog:",
+        "@workspace/panel-ui": "workspace:*",
         "@workspace/seo-rules": "workspace:*",
         "@workspace/ui": "workspace:*",
         "effect": "catalog:",
@@ -50,6 +51,8 @@
         "@orpc/server": "^1.13.5",
         "@workspace/api": "workspace:*",
         "@workspace/env": "workspace:*",
+        "@workspace/panel-ui": "workspace:*",
+        "@workspace/seo-rules": "workspace:*",
         "@workspace/ui": "workspace:*",
         "grammy": "^1.32.0",
         "lucide-react": "^0.563.0",
@@ -92,6 +95,25 @@
       },
       "devDependencies": {
         "@workspace/typescript-config": "workspace:*",
+        "typescript": "^5.9.3",
+      },
+    },
+    "packages/panel-ui": {
+      "name": "@workspace/panel-ui",
+      "version": "0.0.0",
+      "dependencies": {
+        "@workspace/seo-rules": "workspace:*",
+        "@workspace/ui": "workspace:*",
+        "lucide-react": "^0.563.0",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+      },
+      "devDependencies": {
+        "@tailwindcss/postcss": "^4.1.18",
+        "@types/react": "^19.2.10",
+        "@types/react-dom": "^19.2.3",
+        "@workspace/typescript-config": "workspace:*",
+        "tailwindcss": "^4.1.18",
         "typescript": "^5.9.3",
       },
     },
@@ -714,6 +736,8 @@
     "@workspace/api": ["@workspace/api@workspace:packages/api"],
 
     "@workspace/env": ["@workspace/env@workspace:packages/env"],
+
+    "@workspace/panel-ui": ["@workspace/panel-ui@workspace:packages/panel-ui"],
 
     "@workspace/seo-rules": ["@workspace/seo-rules@workspace:packages/seo-rules"],
 

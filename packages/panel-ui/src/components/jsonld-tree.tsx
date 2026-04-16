@@ -1,3 +1,4 @@
+import { CopyButton } from "@workspace/panel-ui/components/copy-button";
 import type {
   FieldSuggestion,
   JsonLdArrayNode,
@@ -9,7 +10,6 @@ import type {
 } from "@workspace/seo-rules/view";
 import { ChevronRight, Plus } from "lucide-react";
 import { useState } from "react";
-import { CopyButton } from "./copy-button";
 
 interface JsonLdTreeProps {
   readonly blocks: readonly JsonLdBlock[];

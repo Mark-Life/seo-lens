@@ -1,0 +1,29 @@
+{
+  "name": "@workspace/panel-ui",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "dependencies": {
+    "@workspace/seo-rules": "workspace:*",
+    "@workspace/ui": "workspace:*",
+    "lucide-react": "^0.563.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "@workspace/typescript-config": "workspace:*",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
+  },
+  "exports": {
+    "./styles.css": "./src/styles/panel.css",
+    "./lib/*": "./src/lib/*.ts",
+    "./components/*": "./src/components/*.tsx"
+  }
+}

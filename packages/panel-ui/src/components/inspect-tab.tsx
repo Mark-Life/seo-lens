@@ -1,3 +1,9 @@
+import { CopyButton } from "@workspace/panel-ui/components/copy-button";
+import {
+  DataSlot,
+  useIsRefreshing,
+} from "@workspace/panel-ui/components/refresh-context";
+import { SectionLabel } from "@workspace/panel-ui/components/section-label";
 import type {
   AuditPhase,
   PageData,
@@ -15,10 +21,7 @@ import {
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { AlertTriangle, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
-import { DataSlot, useIsRefreshing } from "../lib/refresh-context";
-import { CopyButton } from "./copy-button";
 import { buildAllBlocksCopyText, JsonLdTree } from "./jsonld-tree";
-import { SectionLabel } from "./section-label";
 import { SiteSignalsSection } from "./site-signals-section";
 
 const indexingTone: Record<IndexingStatus, string> = {
@@ -55,6 +58,8 @@ const RemoteImage = ({
   }
   return (
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: onError is a load-failure signal, not user interaction
+    // biome-ignore lint/performance/noImgElement: browser extension, not Next.js — next/image unavailable
+    // biome-ignore lint/correctness/useImageSize: remote cross-origin images with unknown dimensions
     <img
       alt={alt}
       className={`absolute inset-0 size-full object-cover ${className}`}

@@ -1,3 +1,6 @@
+import { Header } from "@workspace/panel-ui/components/header";
+import { OverviewTab } from "@workspace/panel-ui/components/overview-tab";
+import { RefreshProvider } from "@workspace/panel-ui/components/refresh-context";
 import { loadSchemaVocab } from "@workspace/seo-rules/generated/schema-vocab";
 import type {
   AuditResult,
@@ -7,14 +10,12 @@ import type {
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { FeedbackDialog } from "./components/feedback-dialog";
-import { Header } from "./components/header";
-import { OverviewTab } from "./components/overview-tab";
+import { ShareSlot } from "./components/share-slot";
 import { ErrorState } from "./components/states/error";
 import { LoadingState } from "./components/states/loading";
 import { RestrictedState } from "./components/states/restricted";
 import { useAuditState } from "./hooks/use-audit-state";
 import { usePersistentTab } from "./hooks/use-persistent-tab";
-import { RefreshProvider } from "./lib/refresh-context";
 
 const fetchSchemaVocab = async () => {
   const url = browser.runtime.getURL("/schema-vocab.json");
@@ -27,7 +28,7 @@ const fetchSchemaVocab = async () => {
 
 const InspectTab = lazy(() =>
   Promise.all([
-    import("./components/inspect-tab"),
+    import("@workspace/panel-ui/components/inspect-tab"),
     loadSchemaVocab(fetchSchemaVocab),
   ]).then(([m]) => ({ default: m.InspectTab }))
 );
@@ -88,7 +89,12 @@ const ReadyView = ({ page, result, tab, onTabChange }: ReadyViewProps) => (
     </nav>
 
     <main>
-      {tab === "overview" && <OverviewTab page={page} result={result} />}
+      {tab === "overview" && (
+        <OverviewTab
+          result={result}
+          shareSlot={<ShareSlot page={page} result={result} />}
+        />
+      )}
       {tab === "inspect" && (
         <Suspense fallback={<LoadingState />}>
           <InspectTab

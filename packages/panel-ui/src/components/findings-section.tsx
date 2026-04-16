@@ -59,11 +59,17 @@ export function reportToText(items: readonly AuditFinding[]): string {
 
 interface FindingsSectionProps {
   readonly findings: readonly AuditFinding[];
+  readonly initialOpen?: readonly string[];
 }
 
-export function FindingsSection({ findings }: FindingsSectionProps) {
+export function FindingsSection({
+  findings,
+  initialOpen,
+}: FindingsSectionProps) {
   const [filter, setFilter] = useState<Severity | "all">("all");
-  const [open, setOpen] = useState<Set<string>>(new Set());
+  const [open, setOpen] = useState<Set<string>>(
+    () => new Set(initialOpen ?? [])
+  );
 
   const visible = useMemo(() => {
     const list =
