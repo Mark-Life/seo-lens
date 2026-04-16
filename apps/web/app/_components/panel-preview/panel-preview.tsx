@@ -63,7 +63,7 @@ export function PanelPreview() {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="grain dark w-full bg-background text-foreground">
+      <div className="grain dark w-full min-w-0 overflow-hidden bg-background text-foreground">
         <div className="sticky top-0 z-20">
           <Header url={mockUrl} />
           <nav className="border-border border-b bg-background/85 backdrop-blur-md">
