@@ -29,6 +29,7 @@ import {
   BrowserApi,
   Extractor,
   SiteSignalsService,
+  type TabEvent,
 } from "@/lib/services";
 
 interface AuditRequest {
@@ -38,6 +39,14 @@ interface AuditRequest {
 }
 
 const SETTLE_DELAY = "1000 millis";
+
+const PASSIVE_REASONS = new Set([
+  "activated",
+  "focus",
+  "panel-connect",
+  "panel-hello",
+  "action-click",
+]);
 
 const originOf = (url: string): string => {
   try {
@@ -59,6 +68,19 @@ const auditTab = Effect.fn("Background.auditTab")(function* (
   const auditor = yield* Auditor;
   const siteSignalsService = yield* SiteSignalsService;
   const bus = yield* AuditBus;
+  const api = yield* BrowserApi;
+
+  if (PASSIVE_REASONS.has(reason)) {
+    const tab = yield* api.getTab(tabId).pipe(Effect.option);
+    const cached = yield* cache.get(tabId);
+    if (
+      Option.isSome(tab) &&
+      Option.isSome(cached) &&
+      cached.value.url === tab.value.url
+    ) {
+      return;
+    }
+  }
 
   yield* bus.publish(tabId, Running.make({ reason }));
 
@@ -169,6 +191,10 @@ const main = Effect.gen(function* () {
   const activeTab = yield* SubscriptionRef.make<Option.Option<TabId>>(
     Option.none()
   );
+  const panelOpen = yield* SubscriptionRef.make(0);
+  const isPanelOpen = SubscriptionRef.get(panelOpen).pipe(
+    Effect.map((n) => n > 0)
+  );
 
   const setActive = (tabId: TabId) =>
     SubscriptionRef.set(activeTab, Option.some(tabId));
@@ -191,74 +217,61 @@ const main = Effect.gen(function* () {
       }),
   };
 
-  // Bootstrap from current active tab.
+  // Bootstrap active-tab ref only; audits start when the panel connects.
   yield* api.getActiveTab().pipe(
     Effect.tap((tab) => setActive(tab.id)),
-    Effect.tap((tab) =>
-      enqueue({ tabId: tab.id, reason: "boot", urgent: false })
-    ),
     Effect.ignore
   );
 
+  const handleActivated = (tabId: TabId) =>
+    Effect.gen(function* () {
+      yield* setActive(tabId);
+      if (yield* isPanelOpen) {
+        yield* enqueue({ tabId, reason: "activated", urgent: true });
+      }
+    });
+
+  const enqueueIfActive = (tabId: TabId, reason: string) =>
+    Effect.gen(function* () {
+      if (!(yield* isPanelOpen)) {
+        return;
+      }
+      yield* cache.invalidate(tabId);
+      const cur = yield* SubscriptionRef.get(activeTab);
+      if (Option.isSome(cur) && cur.value === tabId) {
+        yield* enqueue({ tabId, reason, urgent: false });
+      }
+    });
+
+  const handleFocusChanged = Effect.gen(function* () {
+    const tab = yield* api.getActiveTab().pipe(Effect.option);
+    if (Option.isNone(tab)) {
+      return;
+    }
+    yield* setActive(tab.value.id);
+    if (yield* isPanelOpen) {
+      yield* enqueue({ tabId: tab.value.id, reason: "focus", urgent: true });
+    }
+  });
+
+  const handleEvent = (ev: TabEvent) => {
+    switch (ev._tag) {
+      case "Activated":
+        return handleActivated(ev.tabId);
+      case "Updated":
+        return enqueueIfActive(ev.tabId, "updated");
+      case "HistoryStateUpdated":
+        return enqueueIfActive(ev.tabId, "history");
+      case "WindowFocusChanged":
+        return handleFocusChanged;
+      default:
+        return Effect.void;
+    }
+  };
+
   // Browser event producer.
   yield* api.events.pipe(
-    Stream.tap((ev) =>
-      Effect.gen(function* () {
-        switch (ev._tag) {
-          case "Activated": {
-            yield* setActive(ev.tabId);
-            yield* enqueue({
-              tabId: ev.tabId,
-              reason: "activated",
-              urgent: true,
-            });
-            return;
-          }
-          case "Updated": {
-            yield* AuditCache.pipe(
-              Effect.flatMap((c) => c.invalidate(ev.tabId))
-            );
-            const cur = yield* SubscriptionRef.get(activeTab);
-            if (Option.isSome(cur) && cur.value === ev.tabId) {
-              yield* enqueue({
-                tabId: ev.tabId,
-                reason: "updated",
-                urgent: false,
-              });
-            }
-            return;
-          }
-          case "HistoryStateUpdated": {
-            yield* AuditCache.pipe(
-              Effect.flatMap((c) => c.invalidate(ev.tabId))
-            );
-            const cur = yield* SubscriptionRef.get(activeTab);
-            if (Option.isSome(cur) && cur.value === ev.tabId) {
-              yield* enqueue({
-                tabId: ev.tabId,
-                reason: "history",
-                urgent: false,
-              });
-            }
-            return;
-          }
-          case "WindowFocusChanged": {
-            const tab = yield* api.getActiveTab().pipe(Effect.option);
-            if (Option.isSome(tab)) {
-              yield* setActive(tab.value.id);
-              yield* enqueue({
-                tabId: tab.value.id,
-                reason: "focus",
-                urgent: true,
-              });
-            }
-            return;
-          }
-          default:
-            return;
-        }
-      })
-    ),
+    Stream.tap(handleEvent),
     Stream.runDrain,
     Effect.forkDaemon
   );
@@ -296,6 +309,11 @@ const main = Effect.gen(function* () {
 
   const handleConnection = (port: Browser.runtime.Port) =>
     Effect.gen(function* () {
+      yield* SubscriptionRef.update(panelOpen, (n) => n + 1);
+      yield* Effect.addFinalizer(() =>
+        SubscriptionRef.update(panelOpen, (n) => Math.max(0, n - 1))
+      );
+
       // Trigger an audit for the current active tab on connect.
       const cur = yield* SubscriptionRef.get(activeTab);
       if (Option.isSome(cur)) {
