@@ -29,7 +29,7 @@ export function Hero() {
         </div>
 
         {/* split: text/ctas on left, side panel on right */}
-        <div className="mt-12 grid gap-14 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-16">
+        <div className="mt-12 grid grid-cols-1 gap-14 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-16">
           <div className="flex flex-col">
             <h1 className="max-w-[14ch] font-medium text-[clamp(2.75rem,7vw,6rem)] text-neutral-50 leading-[0.95] tracking-[-0.04em]">
               <span className="block">SEO audit</span>
