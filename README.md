@@ -2,6 +2,8 @@
 
 Browser extension that audits SEO metadata on any webpage. Instant, actionable feedback on title, meta tags, headings, structured data, and more — with every finding copyable as structured plain text for AI coding agents (Claude Code, Cursor, Copilot).
 
+![SEO Lens side panel](./apps/extension/docs/screenshots/chrome-store-1280x800.png)
+
 ## Features
 
 - **Live audit pipeline** driven by the active tab. Re-runs on tab switch, window focus, full load, SPA soft-nav, or manual refresh.
