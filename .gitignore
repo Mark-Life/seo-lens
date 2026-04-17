@@ -28,6 +28,7 @@ build
 dist
 .output/
 .wxt/
+**/.tmp
 
 
 # Debug

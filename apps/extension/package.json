@@ -9,7 +9,8 @@
     "zip": "wxt zip",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "screenshot": "bun run scripts/screenshot.ts"
   },
   "dependencies": {
     "@effect/platform": "catalog:",
@@ -30,6 +31,7 @@
     "@types/react-dom": "^19.2.3",
     "@workspace/typescript-config": "workspace:*",
     "@wxt-dev/module-react": "latest",
+    "playwright": "^1.59.1",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "vitest": "^4.1.4",
