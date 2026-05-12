@@ -52,7 +52,9 @@ export function Hero() {
             <div className="mt-8 flex flex-wrap gap-3">
               <a
                 className="group inline-flex items-center justify-center gap-3 rounded-full bg-[#47d1cd] px-6 py-3.5 font-medium text-[#0a0a0a] text-[15px] transition hover:bg-[#6ee7e3]"
-                href="#install"
+                href="https://chromewebstore.google.com/detail/seo-lens-%E2%80%94-seo-audit-for/aoaaiadojdhkpjjaenohoehlhldkejcb"
+                rel="noopener noreferrer"
+                target="_blank"
               >
                 Add to Chrome — Free
                 <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />

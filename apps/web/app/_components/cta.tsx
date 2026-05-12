@@ -39,6 +39,8 @@ export function Cta() {
           <a
             className="group inline-flex items-center gap-3 rounded-full bg-[#47d1cd] px-8 py-4 font-medium text-[#0a0a0a] text-[15px] transition hover:bg-[#6ee7e3]"
             href="https://chromewebstore.google.com/detail/seo-lens-%E2%80%94-seo-audit-for/aoaaiadojdhkpjjaenohoehlhldkejcb"
+            rel="noopener noreferrer"
+            target="_blank"
           >
             <Chrome className="size-5" />
             Add to Chrome

@@ -29,7 +29,9 @@ export function Nav() {
 
         <a
           className="group inline-flex items-center gap-2 rounded-full border border-[#47d1cd]/40 bg-[#47d1cd]/10 px-4 py-1.5 font-mono text-[#47d1cd] text-[11px] uppercase tracking-[0.16em] transition hover:bg-[#47d1cd]/20"
-          href="#install"
+          href="https://chromewebstore.google.com/detail/seo-lens-%E2%80%94-seo-audit-for/aoaaiadojdhkpjjaenohoehlhldkejcb"
+          rel="noopener noreferrer"
+          target="_blank"
         >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#47d1cd]" />
           Install
